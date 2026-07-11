@@ -1,108 +1,196 @@
 /* ==========================================================================
-   IDM-next — global styles
-   Dense, information-first, utilitarian. Native fonts, tight spacing,
-   no animation beyond progress. Light theme by default; dark supported.
+   Grabby — global styles
+   Windows 11 Fluent Design foundation. Layered neutral materials (Mica →
+   Layer → Card), the native system accent, Segoe UI Variable type ramp,
+   Fluent elevation + motion. Dense and information-first, but premium:
+   purposeful micro-motion, real depth, native control detailing.
+   Light theme by default; a true Fluent dark (warm dark-gray Mica) supported.
    ========================================================================== */
 
 :root {
-  /* palette — light */
+  color-scheme: light;
+
+  /* ---- Fluent neutral layers (light) -------------------------------------
+     Base = the window backdrop (Mica). Layer sits above it (nav, toolbars).
+     Card/Surface is the brightest, for the data table + flyouts. */
+  --mica-base: #f2f4f7;
+  --mica-tint: #eaeef4;
   --bg-app: #f3f3f3;
-  --bg-panel: #f7f7f7;
-  --bg-surface: #ffffff;
-  --bg-toolbar: rgba(250, 250, 250, 0.94);
-  --bg-hover: #e9e9e9;
-  --bg-selected: #dbeaf9;
-  --bg-selected-inactive: #dde3ea;
-  --bg-header: #f8f8f8;
-  --bg-stripe: #fcfcfc;
+  --bg-panel: #f9fafb; /* nav / sidebar layer */
+  --bg-surface: #ffffff; /* card / table surface / flyouts */
+  --bg-layer: #fbfcfd;
+  --bg-toolbar: rgba(249, 250, 252, 0.72); /* acrylic command surfaces */
+  --bg-subtle: #f4f6f8;
 
-  --border: #e3e3e3;
-  --border-strong: #d1d1d1;
-  --border-subtle: #ededed;
+  /* interaction fills — Fluent uses translucent overlays, not solid grays */
+  --bg-hover: rgba(0, 0, 0, 0.037);
+  --bg-hover-strong: rgba(0, 0, 0, 0.06);
+  --bg-active: rgba(0, 0, 0, 0.022);
+  --bg-selected: #eaf1fb;
+  --bg-selected-hover: #e0ebf9;
+  --bg-selected-inactive: #eef0f2;
+  --bg-header: #fbfcfd;
+  --bg-stripe: transparent;
+  --bg-control: #ffffff; /* text field fill */
 
-  --text: #1c2733;
-  --text-muted: #5c6a7a;
-  --text-faint: #8a95a3;
+  --border: rgba(0, 0, 0, 0.078);
+  --border-strong: rgba(0, 0, 0, 0.14);
+  --border-subtle: rgba(0, 0, 0, 0.05);
+  --border-control: rgba(0, 0, 0, 0.14);
+  --border-control-bottom: rgba(0, 0, 0, 0.4); /* the darker bottom edge */
+  --card-highlight: rgba(255, 255, 255, 0.85); /* top inner highlight */
+
+  --text: rgba(0, 0, 0, 0.89);
+  --text-muted: rgba(0, 0, 0, 0.6);
+  --text-faint: rgba(0, 0, 0, 0.44);
+  --text-disabled: rgba(0, 0, 0, 0.36);
   --text-inverse: #ffffff;
+  --text-on-accent: #ffffff;
 
-  --accent: #0067c0;
-  --accent-hover: #005a9e;
-  --accent-soft: #e5f1fb;
+  /* Windows 11 system accent (default blue) */
+  --accent: #005fb8;
+  --accent-hover: #1a6ec2; /* +white overlay */
+  --accent-pressed: #3f82cb;
+  --accent-text: #005fb8;
+  --accent-soft: #eff6fc;
+  --accent-soft-border: #b8d8f4;
+  --accent-glow: rgba(0, 95, 184, 0.28);
 
   /* state colors */
-  --st-queued: #7a8290;
-  --st-connecting: #b07d17;
-  --st-active: #1b8f3a;
-  --st-paused: #9a6b00;
-  --st-completed: #2a7d2e;
-  --st-error: #c0392b;
+  --st-queued: #616a75;
+  --st-connecting: #9a6b1a;
+  --st-active: #0f7b34;
+  --st-paused: #8a5d00;
+  --st-completed: #107c41;
+  --st-error: #c42b1c;
   --st-canceled: #8a95a3;
 
-  --progress-fill: #2f8fe0;
-  --progress-fill-2: #1b6ec2;
-  --progress-track: #dde3ea;
-  --progress-done: #34a853;
-  --progress-error: #d0574b;
+  --st-queued-bg: rgba(97, 106, 117, 0.1);
+  --st-connecting-bg: rgba(154, 107, 26, 0.13);
+  --st-active-bg: rgba(15, 123, 52, 0.11);
+  --st-paused-bg: rgba(138, 93, 0, 0.12);
+  --st-completed-bg: rgba(16, 124, 65, 0.1);
+  --st-error-bg: rgba(196, 43, 28, 0.1);
+  --st-canceled-bg: rgba(138, 149, 163, 0.12);
+
+  --progress-fill: #3f9ae5;
+  --progress-fill-2: #0f6cbd;
+  --progress-track: #e3e8ee;
+  --progress-done: #13a10e;
+  --progress-done-2: #0e8f0a;
+  --progress-error: #d13438;
 
   /* sizing — compact, but with room to breathe */
-  --row-h: 38px;
-  --toolbar-h: 56px;
-  --status-h: 32px;
+  --row-h: 40px;
+  --toolbar-h: 58px;
+  --status-h: 34px;
   --titlebar-h: 40px;
-  --radius: 8px;
-  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "Segoe UI Variable",
-    Roboto, "Helvetica Neue", Arial, sans-serif;
-  --mono: "Cascadia Mono", "Consolas", "SF Mono", ui-monospace, monospace;
+
+  --radius-sm: 4px; /* controls */
+  --radius: 6px;
+  --radius-lg: 8px; /* cards, flyouts */
+  --radius-xl: 10px; /* dialogs, window */
+
+  --font: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI",
+    -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", Arial,
+    sans-serif;
+  --font-display: "Segoe UI Variable Display", "Segoe UI Variable", "Segoe UI",
+    var(--font);
+  --mono: "Cascadia Code", "Cascadia Mono", "Consolas", "SF Mono", ui-monospace,
+    monospace;
   --fs: 13.5px;
   --fs-sm: 12px;
+  --fs-xs: 11px;
 
-  --shadow-menu: 0 8px 24px rgba(0, 0, 0, 0.14), 0 1px 3px rgba(0, 0, 0, 0.08);
-  --shadow-dialog: 0 24px 64px rgba(0, 0, 0, 0.24), 0 2px 8px rgba(0, 0, 0, 0.12);
+  /* Fluent motion — subtle, purposeful */
+  --ease-standard: cubic-bezier(0.33, 0, 0.67, 1);
+  --ease-decel: cubic-bezier(0.1, 0.9, 0.2, 1);
+  --ease-accel: cubic-bezier(0.7, 0, 1, 0.5);
+  --dur-fast: 90ms;
+  --dur: 150ms;
+  --dur-slow: 220ms;
+
+  /* Fluent elevation */
+  --shadow-control: 0 1px 1px rgba(0, 0, 0, 0.06);
+  --shadow-card: 0 2px 4px rgba(0, 0, 0, 0.05), 0 0 1px rgba(0, 0, 0, 0.08);
+  --shadow-menu: 0 8px 20px rgba(0, 0, 0, 0.16), 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-dialog: 0 32px 64px rgba(0, 0, 0, 0.22),
+    0 4px 16px rgba(0, 0, 0, 0.12);
 }
 
 :root[data-theme='dark'] {
-  /* True-black theme. Structural separation comes from borders and interaction
-     states rather than charcoal panel fills. */
+  /* Native Windows 11 Mica dark — warm dark gray, layered. Not true-black:
+     depth comes from progressively lighter layers, exactly like the OS. */
   color-scheme: dark;
-  --bg-app: #000000;
-  --bg-panel: #000000;
-  --bg-surface: #000000;
-  --bg-toolbar: #000000;
-  --bg-hover: #171717;
-  --bg-selected: #0b2e4f;
-  --bg-selected-inactive: #111111;
-  --bg-header: #000000;
-  --bg-stripe: #000000;
+  --mica-base: #1f2023;
+  --mica-tint: #24262b;
+  --bg-app: #202020;
+  --bg-panel: #262629; /* nav layer */
+  --bg-surface: #2b2b2e; /* card / table / flyouts */
+  --bg-layer: #2f2f33;
+  --bg-toolbar: rgba(43, 43, 46, 0.72);
+  --bg-subtle: #262628;
 
-  --border: #292929;
-  --border-strong: #3a3a3a;
-  --border-subtle: #191919;
+  --bg-hover: rgba(255, 255, 255, 0.055);
+  --bg-hover-strong: rgba(255, 255, 255, 0.09);
+  --bg-active: rgba(255, 255, 255, 0.03);
+  --bg-selected: #123a5e;
+  --bg-selected-hover: #164672;
+  --bg-selected-inactive: #34343a;
+  --bg-header: #2b2b2e;
+  --bg-stripe: transparent;
+  --bg-control: rgba(255, 255, 255, 0.06);
 
-  --text: #f2f2f2;
-  --text-muted: #b3b3b3;
-  --text-faint: #707070;
+  --border: rgba(255, 255, 255, 0.075);
+  --border-strong: rgba(255, 255, 255, 0.12);
+  --border-subtle: rgba(255, 255, 255, 0.045);
+  --border-control: rgba(255, 255, 255, 0.1);
+  --border-control-bottom: rgba(255, 255, 255, 0.5);
+  --card-highlight: rgba(255, 255, 255, 0.06);
+
+  --text: rgba(255, 255, 255, 0.92);
+  --text-muted: rgba(255, 255, 255, 0.63);
+  --text-faint: rgba(255, 255, 255, 0.42);
+  --text-disabled: rgba(255, 255, 255, 0.32);
   --text-inverse: #ffffff;
+  --text-on-accent: rgba(0, 0, 0, 0.92); /* dark text on bright accent — native */
 
-  --accent: #4a9eea;
-  --accent-hover: #63aef0;
-  --accent-soft: #071b30;
+  /* dark-theme accent: bright cyan-blue (Windows accent "light 2/3") */
+  --accent: #60cdff;
+  --accent-hover: #7cd7ff;
+  --accent-pressed: #4bb8ec;
+  --accent-text: #6cb8ff;
+  --accent-soft: #10344f;
+  --accent-soft-border: #1f4d70;
+  --accent-glow: rgba(96, 205, 255, 0.3);
 
-  --st-queued: #93a1b1;
-  --st-connecting: #d6a63c;
-  --st-active: #4cc76a;
-  --st-paused: #d6b24c;
-  --st-completed: #5bd07a;
-  --st-error: #ec6b5e;
-  --st-canceled: #7d8a99;
+  --st-queued: #a9b3bf;
+  --st-connecting: #e0af5a;
+  --st-active: #4ac26b;
+  --st-paused: #e0be5a;
+  --st-completed: #57d17a;
+  --st-error: #ff99a4;
+  --st-canceled: #8a95a3;
 
-  --progress-fill: #3f9ae5;
-  --progress-fill-2: #2f7fc9;
-  --progress-track: #181818;
-  --progress-done: #43b063;
-  --progress-error: #d0574b;
+  --st-queued-bg: rgba(169, 179, 191, 0.12);
+  --st-connecting-bg: rgba(224, 175, 90, 0.14);
+  --st-active-bg: rgba(74, 194, 107, 0.14);
+  --st-paused-bg: rgba(224, 190, 90, 0.14);
+  --st-completed-bg: rgba(87, 209, 122, 0.13);
+  --st-error-bg: rgba(255, 153, 164, 0.13);
+  --st-canceled-bg: rgba(138, 149, 163, 0.14);
 
-  --shadow-menu: 0 4px 18px rgba(0, 0, 0, 0.5);
-  --shadow-dialog: 0 12px 48px rgba(0, 0, 0, 0.55);
+  --progress-fill: #62b4f0;
+  --progress-fill-2: #4aa5ec;
+  --progress-track: rgba(255, 255, 255, 0.09);
+  --progress-done: #4ac26b;
+  --progress-done-2: #3bb35c;
+  --progress-error: #ff99a4;
+
+  --shadow-control: 0 1px 1px rgba(0, 0, 0, 0.3);
+  --shadow-card: 0 2px 6px rgba(0, 0, 0, 0.4), 0 0 1px rgba(0, 0, 0, 0.5);
+  --shadow-menu: 0 8px 22px rgba(0, 0, 0, 0.55), 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-dialog: 0 32px 64px rgba(0, 0, 0, 0.6), 0 4px 16px rgba(0, 0, 0, 0.5);
 }
 
 * {
@@ -120,8 +208,16 @@ body {
 body {
   font-family: var(--font);
   font-size: var(--fs);
+  font-weight: 400;
   color: var(--text);
-  background: var(--bg-app);
+  /* Mica-like layered backdrop: a soft desktop-tinted gradient under the app */
+  background-color: var(--mica-base);
+  background-image: radial-gradient(
+      130% 120% at 12% 0%,
+      var(--mica-tint) 0%,
+      transparent 55%
+    ),
+    radial-gradient(120% 120% at 100% 100%, var(--mica-tint) 0%, transparent 60%);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   user-select: none;
@@ -133,30 +229,39 @@ body {
   width: 100vw;
 }
 
-/* scrollbars — thin, native-ish */
+/* scrollbars — thin, Fluent overlay-style */
 ::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
   background: var(--border-strong);
-  border: 3px solid var(--bg-surface);
-  border-radius: 8px;
+  border: 4px solid transparent;
+  background-clip: padding-box;
+  border-radius: 10px;
+  min-height: 40px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-faint);
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
-/* focus */
+/* focus — Fluent focus rectangle (dark inner + accent outer feel) */
 :focus-visible {
-  outline: 1px solid var(--accent);
-  outline-offset: -1px;
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-radius: var(--radius-sm);
 }
 
-/* form controls — plain, native feel */
+/* form controls — Windows 11 native detailing:
+   subtle top stroke + darker bottom stroke; on focus the bottom stroke
+   becomes a 2px accent underline. */
 input[type='text'],
 input[type='number'],
 input[type='search'],
@@ -166,33 +271,49 @@ textarea {
   font-family: var(--font);
   font-size: var(--fs);
   color: var(--text);
-  background: var(--bg-surface);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius);
+  background: var(--bg-control);
+  border: 1px solid var(--border-control);
+  border-bottom-color: var(--border-control-bottom);
+  border-radius: var(--radius-sm);
   height: 32px;
-  padding: 0 10px;
+  padding: 0 11px;
   min-height: 32px;
   line-height: 30px;
   box-shadow: none;
   outline: none;
-  transition: border-color 80ms ease, box-shadow 80ms ease;
+  transition: border-color var(--dur) var(--ease-standard),
+    background-color var(--dur) var(--ease-standard),
+    box-shadow var(--dur) var(--ease-standard);
+}
+input[type='text']:hover,
+input[type='number']:hover,
+input[type='search']:hover,
+input[type='time']:hover,
+textarea:hover,
+select:hover {
+  border-bottom-color: var(--border-control-bottom);
+  background: var(--bg-surface);
 }
 input:focus,
 select:focus,
 textarea:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent);
+  border-color: var(--border-control);
+  /* the signature Fluent accent underline (2px), drawn without shifting layout */
+  border-bottom-color: var(--accent);
+  box-shadow: inset 0 -1px 0 0 var(--accent);
+  background: var(--bg-surface);
 }
 textarea {
   height: auto;
   min-height: 72px;
   padding-top: 7px;
   padding-bottom: 7px;
-  line-height: 1.4;
+  line-height: 1.45;
   resize: vertical;
 }
 select {
   padding-right: 28px;
+  cursor: pointer;
 }
 input::placeholder,
 textarea::placeholder {
@@ -202,18 +323,45 @@ textarea::placeholder {
 input:disabled,
 select:disabled,
 textarea:disabled {
-  color: var(--text-faint);
-  background: var(--bg-panel);
+  color: var(--text-disabled);
+  background: var(--bg-subtle);
   border-color: var(--border);
+  border-bottom-color: var(--border);
   opacity: 1;
 }
 input[type='checkbox'] {
-  accent-color: var(--accent);
-  width: 14px;
-  height: 14px;
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
   min-height: 0;
   padding: 0;
+  border: 1px solid var(--border-control-bottom);
+  border-radius: var(--radius-sm);
+  background: var(--bg-control);
   box-shadow: none;
+  position: relative;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-standard),
+    border-color var(--dur-fast) var(--ease-standard);
+}
+input[type='checkbox']:hover {
+  background: var(--bg-hover-strong);
+}
+input[type='checkbox']:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+input[type='checkbox']:checked::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 2px;
+  width: 5px;
+  height: 10px;
+  border: solid var(--text-on-accent);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
 }
 label {
   color: var(--text);
@@ -225,39 +373,63 @@ button {
   cursor: default;
 }
 
-/* generic button used in dialogs */
+/* generic button used in dialogs — Fluent standard/accent buttons */
 .btn {
   font-size: var(--fs);
-  padding: 7px 18px;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius);
-  background: var(--bg-surface);
+  padding: 6px 20px;
+  border: 1px solid var(--border-control);
+  border-bottom-color: var(--border-control-bottom);
+  border-radius: var(--radius-sm);
+  background: var(--bg-control);
   color: var(--text);
-  min-width: 80px;
+  min-width: 88px;
   min-height: 32px;
   font-weight: 600;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-control);
+  transition: background-color var(--dur-fast) var(--ease-standard),
+    border-color var(--dur-fast) var(--ease-standard),
+    transform var(--dur-fast) var(--ease-standard);
 }
 .btn:hover {
-  background: var(--bg-hover);
+  background: var(--bg-hover-strong);
+}
+.btn:active {
+  background: var(--bg-active);
+  transform: scale(0.985);
 }
 .btn:disabled {
-  opacity: 0.5;
+  color: var(--text-disabled);
+  background: var(--bg-subtle);
+  border-color: var(--border);
+  box-shadow: none;
 }
 .btn.primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--text-inverse);
+  background: linear-gradient(
+    var(--accent) 0%,
+    color-mix(in srgb, var(--accent) 92%, #000) 100%
+  );
+  border-color: transparent;
+  border-top-color: rgba(255, 255, 255, 0.22);
+  color: var(--text-on-accent);
+  box-shadow: var(--shadow-control);
 }
 .btn.primary:hover {
-  background: var(--accent-hover);
+  background: linear-gradient(
+    var(--accent-hover) 0%,
+    color-mix(in srgb, var(--accent-hover) 92%, #000) 100%
+  );
+}
+.btn.primary:active {
+  background: var(--accent-pressed);
+  color: color-mix(in srgb, var(--text-on-accent) 80%, transparent);
 }
 .btn.danger {
   color: var(--st-error);
-  border-color: var(--st-error);
+  border-color: color-mix(in srgb, var(--st-error) 45%, var(--border-control));
 }
 .btn.danger:hover {
   background: var(--st-error);
+  border-color: var(--st-error);
   color: #fff;
 }
 
@@ -267,4 +439,11 @@ button {
 }
 .tnum {
   font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
 }

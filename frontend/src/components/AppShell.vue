@@ -185,50 +185,62 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey));
   height: 100vh;
   width: 100vw;
   overflow: hidden;
-  background: var(--bg-app);
+  background: transparent; /* Mica backdrop from body reads through */
 }
 .subbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 46px;
-  padding: 0 16px;
-  background: var(--bg-panel);
-  border-bottom: 1px solid var(--border);
+  height: 50px;
+  padding: 0 16px 10px;
+  background: transparent;
   flex: none;
 }
 .crumb {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 9px;
+  font-family: var(--font-display);
   font-weight: 600;
-  font-size: var(--fs);
+  font-size: 16px;
+  letter-spacing: -0.01em;
 }
 .crumb :deep(svg) {
-  color: var(--text-muted);
+  color: var(--accent-text);
 }
 .crumb-count {
   font-size: var(--fs-sm);
-  color: var(--text-faint);
-  font-weight: 500;
+  color: var(--text-muted);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
   background: var(--bg-surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 0 6px;
+  border-radius: 999px;
+  min-width: 22px;
+  text-align: center;
+  padding: 1px 8px;
+  box-shadow: var(--shadow-control);
 }
 .search {
   display: flex;
   align-items: center;
-  gap: 7px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius);
-  padding: 0 10px;
+  gap: 8px;
+  background: var(--bg-control);
+  border: 1px solid var(--border-control);
+  border-bottom-color: var(--border-control-bottom);
+  border-radius: var(--radius-sm);
+  padding: 0 11px;
   height: 32px;
-  width: 280px;
+  width: 300px;
+  transition: border-color var(--dur) var(--ease-standard),
+    box-shadow var(--dur) var(--ease-standard);
+}
+.search:hover {
+  background: var(--bg-surface);
 }
 .search:focus-within {
-  border-color: var(--accent);
+  border-bottom-color: var(--accent);
+  box-shadow: inset 0 -1px 0 0 var(--accent);
 }
 .search :deep(svg) {
   color: var(--text-faint);
@@ -256,15 +268,17 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey));
   flex: 1;
   display: flex;
   min-height: 0;
-  padding: 0 8px 8px;
-  gap: 8px;
+  padding: 0 10px 10px;
+  gap: 10px;
 }
 .content {
   flex: 1;
   min-width: 0;
   display: flex;
+  background: var(--bg-surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
+  box-shadow: var(--shadow-card);
 }
 </style>

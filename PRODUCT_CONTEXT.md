@@ -1,4 +1,4 @@
-# IDM-next — Product Context
+# Grabby — Product Context
 
 > Read this first. It's the single orientation document for the project: what
 > it is, how it's built, the contract that anchors everything, and what is /
@@ -14,10 +14,17 @@ frontend). It manages HTTP downloads, video grabs, and torrents: queueing,
 pausing/resuming, segmented multi-connection downloads, categories, speed
 limits, scheduling, and browser/clipboard capture.
 
-**Design intent:** dense, information-first, utilitarian — "would this look at
-home next to IDM's download list?" A data table is the centerpiece. Compact but
-not cramped, native-feeling, no gratuitous animation (only progress animates).
-Light theme by default with a full dark theme.
+**Design intent:** dense, information-first, and utilitarian, but *premium* —
+built to feel like a native **Windows 11 (Fluent Design)** application, not a
+generic template. The data table is the centerpiece; compact but not cramped.
+Fluent foundation lives in `frontend/src/style.css`: layered neutral materials
+(Mica → Layer → Card), the Windows system accent, Segoe UI Variable type ramp,
+Fluent elevation + motion tokens, and native control detailing (focus accent
+underline, NavigationView selection pill, rounded progress). Motion is subtle
+and purposeful (as Windows itself is) — hover/press transitions, flyout and
+dialog entrances — never gratuitous. Light theme by default; the dark theme is a
+native warm dark-gray **Mica** (deliberately *not* true-black), with the bright
+accent + dark-on-accent buttons Windows 11 uses.
 
 ---
 

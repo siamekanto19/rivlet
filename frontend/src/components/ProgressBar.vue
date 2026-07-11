@@ -56,48 +56,67 @@ const stateClass = computed(() => `s-${d.value.state}`);
 <style scoped>
 .pbar {
   position: relative;
-  height: 17px;
+  height: 18px;
   width: 100%;
   display: flex;
   align-items: center;
+  gap: 9px;
 }
 .bar-track,
 .seg-track,
 .indet {
   position: relative;
-  height: 15px;
-  width: 100%;
+  height: 6px;
+  flex: 1;
+  min-width: 0;
   background: var(--progress-track);
-  border: 1px solid var(--border);
-  border-radius: 3px;
+  border-radius: 999px;
   overflow: hidden;
 }
 .bar-fill {
   height: 100%;
-  background: linear-gradient(var(--progress-fill), var(--progress-fill-2));
-  transition: width 0.25s linear;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    var(--progress-fill-2),
+    var(--progress-fill)
+  );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transition: width 0.25s var(--ease-decel);
 }
 .seg-track {
   display: flex;
-  gap: 1px;
+  gap: 2px;
+  background: transparent;
 }
 .seg {
   flex: 1 1 0;
   height: 100%;
   background: var(--progress-track);
+  border-radius: 999px;
   position: relative;
   overflow: hidden;
 }
 .seg-fill {
   height: 100%;
-  background: linear-gradient(var(--progress-fill), var(--progress-fill-2));
-  transition: width 0.25s linear;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    var(--progress-fill-2),
+    var(--progress-fill)
+  );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transition: width 0.25s var(--ease-decel);
 }
 
 /* completed */
 .s-completed .bar-fill,
 .s-completed .seg-fill {
-  background: var(--progress-done);
+  background: linear-gradient(
+    90deg,
+    var(--progress-done-2),
+    var(--progress-done)
+  );
 }
 /* paused / queued / canceled — muted */
 .s-paused .bar-fill,
@@ -105,12 +124,12 @@ const stateClass = computed(() => `s-${d.value.state}`);
 .s-queued .bar-fill,
 .s-queued .seg-fill {
   background: var(--st-paused);
-  opacity: 0.75;
+  opacity: 0.7;
 }
 .s-canceled .bar-fill,
 .s-canceled .seg-fill {
   background: var(--st-canceled);
-  opacity: 0.6;
+  opacity: 0.55;
 }
 /* error */
 .s-error .bar-fill,
@@ -119,15 +138,20 @@ const stateClass = computed(() => `s-${d.value.state}`);
 }
 
 .pct {
-  position: absolute;
-  right: 4px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 10px;
-  color: var(--text);
-  mix-blend-mode: normal;
-  text-shadow: 0 0 2px var(--bg-surface), 0 0 2px var(--bg-surface);
+  flex: none;
+  min-width: 30px;
+  text-align: right;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--text-muted);
   pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}
+.s-completed .pct {
+  color: var(--st-completed);
+}
+.s-error .pct {
+  color: var(--st-error);
 }
 
 /* indeterminate animation — the one animation the PRD allows (progress) */

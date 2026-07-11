@@ -91,13 +91,15 @@ function confirm() {
   grid-template-columns: 18px 1fr auto auto 90px;
   align-items: center;
   gap: 10px;
-  padding: 7px 10px;
+  padding: 8px 11px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--bg-surface);
+  transition: background-color var(--dur-fast) var(--ease-standard),
+    border-color var(--dur-fast) var(--ease-standard);
 }
 .fitem:hover {
-  background: var(--bg-hover);
+  background: var(--bg-hover-strong);
 }
 .fitem.sel {
   border-color: var(--accent);

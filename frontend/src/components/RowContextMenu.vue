@@ -158,54 +158,70 @@ watch(() => [props.x, props.y], () => requestAnimationFrame(reposition));
 <style scoped>
 .menu {
   position: fixed;
-  min-width: 224px;
+  min-width: 232px;
   background: var(--bg-surface);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-menu);
-  padding: 6px;
+  padding: 5px;
   z-index: 200;
   user-select: none;
+  transform-origin: top left;
+  animation: menu-in var(--dur-slow) var(--ease-decel);
+}
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 .mi {
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 12px;
   width: 100%;
-  padding: 7px 12px;
+  padding: 8px 12px;
   border: none;
   background: transparent;
   color: var(--text);
   text-align: left;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   font-size: var(--fs);
   white-space: nowrap;
+  transition: background-color var(--dur-fast) var(--ease-standard);
 }
 .mi :deep(svg) {
   color: var(--text-muted);
   flex: none;
 }
 .mi:hover:not(:disabled) {
-  background: var(--accent);
-  color: #fff;
+  background: var(--bg-hover-strong);
 }
-.mi:hover:not(:disabled) :deep(svg) {
-  color: #fff;
+.mi:active:not(:disabled) {
+  background: var(--bg-active);
 }
 .mi:disabled {
-  color: var(--text-faint);
-  opacity: 0.5;
+  color: var(--text-disabled);
+}
+.mi:disabled :deep(svg) {
+  opacity: 0.4;
 }
 .mi.danger {
   color: var(--st-error);
 }
+.mi.danger :deep(svg) {
+  color: var(--st-error);
+}
 .mi.danger:hover:not(:disabled) {
-  background: var(--st-error);
-  color: #fff;
+  background: var(--st-error-bg);
 }
 .mdiv {
   height: 1px;
   background: var(--border);
-  margin: 4px 6px;
+  margin: 5px 8px;
 }
 </style>

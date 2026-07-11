@@ -1,11 +1,19 @@
 <script lang="ts" setup>
 import { onMounted, ref } from 'vue';
 import { useDownloadsStore } from './stores/downloads';
+import { useUiStore } from './stores/ui';
 import AppShell from './components/AppShell.vue';
+import MiniPlayer from './components/MiniPlayer.vue';
 import { windowControls } from './services/window';
 
 const store = useDownloadsStore();
+const ui = useUiStore();
 const theme = ref<'light' | 'dark'>('light');
+
+function onMiniClose() {
+  // Sending the mini-player away keeps downloads running in the tray.
+  windowControls.hide();
+}
 
 function applyTheme(t: 'light' | 'dark') {
   theme.value = t;
@@ -38,7 +46,10 @@ onMounted(() => {
 </script>
 
 <template>
-  <AppShell v-if="store.ready" @toggle-theme="toggleTheme" />
+  <template v-if="store.ready">
+    <MiniPlayer v-if="ui.mode === 'mini'" @expand="ui.exitMini()" @close="onMiniClose" />
+    <AppShell v-else @toggle-theme="toggleTheme" />
+  </template>
   <div v-else class="boot">Loading…</div>
 </template>
 

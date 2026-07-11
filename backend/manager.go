@@ -45,7 +45,7 @@ func NewManager(stateDir string, emit EventSink) (*Manager, error) {
 		if err != nil {
 			return nil, err
 		}
-		stateDir = filepath.Join(stateDir, "IDM-next")
+		stateDir = filepath.Join(stateDir, "Grabby")
 	}
 	if err := os.MkdirAll(stateDir, 0755); err != nil {
 		return nil, err

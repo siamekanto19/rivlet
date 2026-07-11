@@ -77,16 +77,18 @@ const isDark = computed(() => document.documentElement.getAttribute('data-theme'
   display: flex;
   align-items: center;
   height: var(--toolbar-h);
-  padding: 8px 12px;
+  padding: 0 14px;
   background: var(--bg-toolbar);
-  border-bottom: 1px solid var(--border-strong);
-  gap: 4px;
+  backdrop-filter: saturate(1.4) blur(20px);
+  -webkit-backdrop-filter: saturate(1.4) blur(20px);
+  border-bottom: 1px solid var(--border);
+  gap: 6px;
   flex: none;
 }
 .group {
   display: flex;
   align-items: stretch;
-  gap: 4px;
+  gap: 3px;
 }
 .spacer {
   flex: 1;
@@ -96,63 +98,96 @@ const isDark = computed(() => document.documentElement.getAttribute('data-theme'
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: 8px;
   min-width: 42px;
   height: 36px;
-  padding: 0 12px;
+  padding: 0 13px;
   border: 1px solid transparent;
   border-radius: var(--radius);
   background: transparent;
   color: var(--text);
+  transition: background-color var(--dur-fast) var(--ease-standard),
+    border-color var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard),
+    transform var(--dur-fast) var(--ease-standard),
+    box-shadow var(--dur-fast) var(--ease-standard);
+}
+.tbtn :deep(svg) {
+  transition: color var(--dur-fast) var(--ease-standard);
 }
 .command-group {
   gap: 2px;
-  padding: 2px;
+  padding: 3px;
   border: 1px solid var(--border);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--bg-surface) 72%, transparent);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-card);
 }
 .command-group .tbtn {
   height: 32px;
-  padding: 0 10px;
-  border-radius: 7px;
+  padding: 0 11px;
+  border-radius: var(--radius-sm);
 }
 .utility-group {
-  gap: 2px;
+  gap: 3px;
 }
 .tbtn span {
-  font-size: 12px;
+  font-size: 12.5px;
   line-height: 1;
+  font-weight: 500;
 }
 .tbtn:hover:not(:disabled) {
-  background: var(--bg-hover);
-  border-color: var(--border);
+  background: var(--bg-hover-strong);
 }
 .tbtn:active:not(:disabled) {
-  background: var(--bg-selected);
+  background: var(--bg-active);
+  transform: scale(0.97);
 }
 .tbtn:disabled {
-  color: var(--text-faint);
-  opacity: 0.55;
+  color: var(--text-disabled);
+}
+.tbtn:disabled :deep(svg) {
+  opacity: 0.5;
+}
+
+/* primary accent button — Fluent fill with inner top highlight */
+.primary-group {
+  margin-right: 3px;
 }
 .tbtn.accent {
-  color: var(--text-inverse);
-  background: var(--accent);
-  border-color: var(--accent);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  color: var(--text-on-accent);
+  padding: 0 16px;
+  height: 36px;
+  background: linear-gradient(
+    var(--accent) 0%,
+    color-mix(in srgb, var(--accent) 90%, #000) 100%
+  );
+  border-color: transparent;
+  border-top-color: rgba(255, 255, 255, 0.28);
+  box-shadow: 0 1px 2px var(--accent-glow), var(--shadow-control);
+}
+.tbtn.accent span {
+  font-weight: 600;
 }
 .tbtn.accent:hover:not(:disabled) {
-  background: var(--accent-hover);
-  border-color: var(--accent-hover);
+  background: linear-gradient(
+    var(--accent-hover) 0%,
+    color-mix(in srgb, var(--accent-hover) 90%, #000) 100%
+  );
+  box-shadow: 0 2px 8px var(--accent-glow), var(--shadow-control);
+}
+.tbtn.accent:active:not(:disabled) {
+  background: var(--accent-pressed);
+  color: color-mix(in srgb, var(--text-on-accent) 80%, transparent);
+  transform: scale(0.97);
 }
 .tbtn.danger:hover:not(:disabled) {
   color: var(--st-error);
-  background: color-mix(in srgb, var(--st-error) 12%, transparent);
-  border-color: var(--st-error);
+  background: var(--st-error-bg);
 }
 .tbtn.ghost {
   min-width: 36px;
-  padding: 0 9px;
+  padding: 0 10px;
   color: var(--text-muted);
 }
 .tbtn.dev {

@@ -28,17 +28,20 @@ function pick(cat: string) {
     <div class="sb-section">
       <div class="sb-title">Status</div>
       <button class="sb-item" :class="{ active: active === 'all' }" @click="pick('all')">
-        <Icon name="folder" :size="15" />
+        <span class="pill" />
+        <Icon name="folder" :size="16" />
         <span class="lbl">All Downloads</span>
         <span class="cnt">{{ store.downloads.length }}</span>
       </button>
       <button class="sb-item" :class="{ active: active === 'unfinished' }" @click="pick('unfinished')">
-        <Icon name="resume" :size="13" />
+        <span class="pill" />
+        <Icon name="resume" :size="14" />
         <span class="lbl">Unfinished</span>
         <span class="cnt">{{ store.unfinishedCount }}</span>
       </button>
       <button class="sb-item" :class="{ active: active === 'finished' }" @click="pick('finished')">
-        <Icon name="check" :size="15" />
+        <span class="pill" />
+        <Icon name="check" :size="16" />
         <span class="lbl">Finished</span>
         <span class="cnt">{{ store.finishedCount }}</span>
       </button>
@@ -54,7 +57,8 @@ function pick(cat: string) {
         @click="pick(c.id)"
         :title="c.folder"
       >
-        <Icon :name="categoryIcon[c.id] ?? 'folder'" :size="15" />
+        <span class="pill" />
+        <Icon :name="categoryIcon[c.id] ?? 'folder'" :size="16" />
         <span class="lbl">{{ c.name }}</span>
         <span class="cnt" v-if="counts[c.id]">{{ counts[c.id] }}</span>
       </button>
@@ -64,51 +68,77 @@ function pick(cat: string) {
 
 <style scoped>
 .sidebar {
-  width: 210px;
+  width: 214px;
   flex: none;
-  background: var(--bg-panel);
-  border-right: 1px solid var(--border-strong);
+  background: transparent; /* NavigationView floats on the Mica backdrop */
   overflow-y: auto;
-  padding: 12px 8px;
+  overflow-x: hidden;
+  padding: 4px 6px 12px;
   user-select: none;
 }
 .sb-section {
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 .sb-title {
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--text-faint);
-  padding: 6px 10px;
+  padding: 8px 12px 4px;
 }
 .sb-item {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 11px;
   width: 100%;
   min-height: 36px;
-  padding: 7px 10px;
-  border: none;
+  padding: 7px 12px;
+  border: 1px solid transparent;
   background: transparent;
   color: var(--text);
   text-align: left;
-  border-radius: 6px;
+  border-radius: var(--radius);
+  transition: background-color var(--dur-fast) var(--ease-standard),
+    transform var(--dur-fast) var(--ease-standard);
 }
 .sb-item:hover {
-  background: var(--bg-hover);
+  background: var(--bg-hover-strong);
+}
+.sb-item:active {
+  background: var(--bg-active);
+  transform: scale(0.99);
 }
 .sb-item.active {
   background: var(--bg-selected);
   font-weight: 600;
 }
+.sb-item.active:hover {
+  background: var(--bg-selected-hover);
+}
+/* the iconic Win11 NavigationView selection indicator */
+.pill {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 3px;
+  height: 0;
+  border-radius: 3px;
+  background: var(--accent);
+  transform: translateY(-50%);
+  transition: height var(--dur-slow) var(--ease-decel);
+}
+.sb-item.active .pill {
+  height: 16px;
+}
 .sb-item :deep(svg) {
   color: var(--text-muted);
   flex: none;
+  transition: color var(--dur-fast) var(--ease-standard);
 }
 .sb-item.active :deep(svg) {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .lbl {
   flex: 1;
@@ -118,18 +148,20 @@ function pick(cat: string) {
   font-size: var(--fs);
 }
 .cnt {
-  font-size: var(--fs-sm);
-  color: var(--text-faint);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--text-muted);
   font-variant-numeric: tabular-nums;
   background: var(--bg-surface);
   border: 1px solid var(--border);
-  border-radius: 9px;
-  min-width: 18px;
+  border-radius: 999px;
+  min-width: 20px;
   text-align: center;
-  padding: 0 5px;
+  padding: 1px 6px;
 }
 .sb-item.active .cnt {
-  color: var(--accent);
-  border-color: var(--accent);
+  color: var(--accent-text);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-color: var(--accent-soft-border);
 }
 </style>

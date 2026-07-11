@@ -202,7 +202,7 @@ function clearDrag() {
   display: grid;
   align-items: stretch;
   background: var(--bg-header);
-  border-bottom: 1px solid var(--border-strong);
+  border-bottom: 1px solid var(--border);
   position: sticky;
   top: 0;
   z-index: 2;
@@ -211,18 +211,16 @@ function clearDrag() {
 .th {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 0 11px;
-  height: 36px;
+  gap: 5px;
+  padding: 0 12px;
+  height: 38px;
   font-size: var(--fs-sm);
   font-weight: 600;
   color: var(--text-muted);
-  border-right: 1px solid var(--border);
   white-space: nowrap;
   overflow: hidden;
-}
-.th:last-child {
-  border-right: none;
+  transition: background-color var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard);
 }
 .th:hover {
   background: var(--bg-hover);
@@ -232,10 +230,11 @@ function clearDrag() {
   justify-content: flex-end;
 }
 .th.sorted {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .th-sort {
   font-size: 8px;
+  color: var(--accent-text);
 }
 
 /* body */
@@ -243,26 +242,54 @@ function clearDrag() {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
+  padding: 2px 0;
 }
 .tr {
   display: grid;
   align-items: center;
   height: var(--row-h);
-  border-bottom: 1px solid var(--border-subtle);
   cursor: default;
+  position: relative;
+  border-radius: var(--radius-sm);
+  transition: background-color var(--dur-fast) var(--ease-standard);
 }
-.tr:nth-child(even) {
-  background: var(--bg-stripe);
+.tr::after {
+  /* hairline row separator that doesn't fight the rounded hover fill */
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 0;
+  height: 1px;
+  background: var(--border-subtle);
+  pointer-events: none;
 }
 .tr:hover {
   background: var(--bg-hover);
 }
 .tr.selected {
   background: var(--bg-selected);
-  box-shadow: inset 3px 0 0 var(--accent);
+}
+.tr.selected:hover {
+  background: var(--bg-selected-hover);
+}
+.tr.selected::after {
+  opacity: 0;
+}
+/* Win11 list selection indicator — rounded accent bar */
+.tr.selected::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 18px;
+  border-radius: 3px;
+  background: var(--accent);
 }
 .tr.dragging {
-  opacity: 0.45;
+  opacity: 0.4;
 }
 .tr.drop-before {
   box-shadow: inset 0 2px 0 var(--accent);
@@ -271,25 +298,25 @@ function clearDrag() {
   box-shadow: inset 0 -2px 0 var(--accent);
 }
 .td {
-  padding: 0 11px;
+  padding: 0 12px;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
   font-size: var(--fs);
-  border-right: 1px solid transparent;
 }
 .td.right {
   text-align: right;
   color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
 }
 .td.date {
-  color: var(--text-muted);
+  color: var(--text-faint);
   font-size: var(--fs-sm);
 }
 .name {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 10px;
 }
 .kind-icon {
   flex: none;
@@ -297,7 +324,10 @@ function clearDrag() {
 }
 .tr.s-active .kind-icon,
 .tr.s-connecting .kind-icon {
-  color: var(--accent);
+  color: var(--accent-text);
+}
+.tr.s-completed .kind-icon {
+  color: var(--st-completed);
 }
 .tr.s-error .kind-icon {
   color: var(--st-error);
@@ -306,13 +336,16 @@ function clearDrag() {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-weight: 500;
 }
 .tr.s-completed .fname {
   color: var(--text);
+  font-weight: 400;
 }
 .tr.s-canceled .fname,
 .tr.s-paused .fname {
   color: var(--text-muted);
+  font-weight: 400;
 }
 .progress-cell {
   overflow: visible;
@@ -324,12 +357,18 @@ function clearDrag() {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  height: 220px;
+  height: 100%;
+  min-height: 260px;
   color: var(--text-faint);
+}
+.empty :deep(svg) {
+  opacity: 0.5;
+  margin-bottom: 4px;
 }
 .empty p {
   margin: 6px 0 0;
-  font-size: 14px;
+  font-size: 15px;
+  font-weight: 600;
   color: var(--text-muted);
 }
 .empty span {

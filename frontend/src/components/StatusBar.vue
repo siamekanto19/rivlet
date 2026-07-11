@@ -92,13 +92,15 @@ function applyCustom() {
   display: flex;
   align-items: center;
   height: var(--status-h);
-  padding: 0 12px;
+  padding: 0 14px;
   background: var(--bg-toolbar);
-  border-top: 1px solid var(--border-strong);
+  backdrop-filter: saturate(1.4) blur(20px);
+  -webkit-backdrop-filter: saturate(1.4) blur(20px);
+  border-top: 1px solid var(--border);
   font-size: var(--fs-sm);
   color: var(--text-muted);
   flex: none;
-  gap: 3px;
+  gap: 2px;
 }
 .cell {
   display: flex;
@@ -110,12 +112,16 @@ function applyCustom() {
 .cell.speed {
   color: var(--st-active);
   font-weight: 600;
-  min-width: 92px;
+  min-width: 96px;
+}
+.cell.speed :deep(svg) {
+  color: var(--st-active);
 }
 .sep {
   width: 1px;
   height: 14px;
   background: var(--border);
+  margin: 0 2px;
 }
 .spacer {
   flex: 1;
@@ -125,55 +131,76 @@ function applyCustom() {
   height: 7px;
   border-radius: 50%;
   background: var(--st-active);
+  box-shadow: 0 0 0 3px var(--st-active-bg);
 }
 .limit-wrap {
   position: relative;
 }
 .limit {
   border: 1px solid transparent;
-  border-radius: var(--radius);
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-muted);
-  height: 20px;
+  height: 24px;
+  transition: background-color var(--dur-fast) var(--ease-standard);
 }
 .limit:hover {
-  background: var(--bg-hover);
-  border-color: var(--border);
+  background: var(--bg-hover-strong);
 }
 .limit.on {
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 600;
+}
+.limit.on :deep(svg) {
+  color: var(--accent-text);
 }
 .limit-menu {
   position: absolute;
-  bottom: 26px;
+  bottom: 30px;
   right: 0;
-  min-width: 190px;
+  min-width: 200px;
   background: var(--bg-surface);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-menu);
-  padding: 4px;
+  padding: 5px;
   z-index: 50;
+  transform-origin: bottom right;
+  animation: flyout-in var(--dur-slow) var(--ease-decel);
+}
+@keyframes flyout-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 .lm-item {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   width: 100%;
-  padding: 5px 8px;
+  padding: 7px 10px;
   border: none;
   background: transparent;
   color: var(--text);
   text-align: left;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   font-size: var(--fs);
+  transition: background-color var(--dur-fast) var(--ease-standard);
 }
 .lm-item:hover {
-  background: var(--bg-hover);
+  background: var(--bg-hover-strong);
 }
 .lm-item.sel {
-  color: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+.lm-item.sel :deep(svg) {
+  color: var(--accent-text);
 }
 .ck-space {
   width: 13px;
@@ -182,16 +209,16 @@ function applyCustom() {
 .lm-custom {
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 6px 6px 3px;
+  gap: 6px;
+  padding: 8px 6px 4px;
   border-top: 1px solid var(--border);
-  margin-top: 4px;
+  margin-top: 5px;
 }
 .lm-custom input {
-  width: 68px;
+  width: 72px;
 }
 .lm-custom .btn {
   min-width: auto;
-  padding: 3px 10px;
+  padding: 3px 12px;
 }
 </style>

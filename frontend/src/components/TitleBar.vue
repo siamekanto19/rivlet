@@ -1,6 +1,11 @@
 <script lang="ts" setup>
 import { onMounted, onBeforeUnmount, ref } from 'vue';
 import { windowControls } from '../services/window';
+import { useDownloadsStore } from '../stores/downloads';
+import { useUiStore } from '../stores/ui';
+
+const store = useDownloadsStore();
+const ui = useUiStore();
 
 const maximised = ref(false);
 let poll: ReturnType<typeof setInterval> | null = null;
@@ -18,7 +23,10 @@ function toggleMaximise() {
   setTimeout(refresh, 60);
 }
 function close() {
-  windowControls.quit();
+  // With downloads in flight, closing shrinks to the floating mini-player so
+  // progress stays visible; otherwise it tucks away into the system tray.
+  if (store.activeCount > 0) ui.enterMini();
+  else windowControls.hide();
 }
 
 onMounted(() => {
@@ -33,8 +41,8 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="titlebar">
-    <!-- draggable region (Wails reads --wails-draggable) -->
-    <div class="drag" />
+    <!-- draggable spacer -->
+    <div class="drag drag-fill" />
 
     <!-- window controls -->
     <div class="controls">
@@ -65,15 +73,32 @@ onBeforeUnmount(() => {
   align-items: stretch;
   justify-content: space-between;
   height: var(--titlebar-h);
-  background: var(--bg-toolbar);
-  border-bottom: 1px solid var(--border-strong);
+  background: transparent; /* let the Mica backdrop read through */
   flex: none;
   user-select: none;
 }
 .drag {
-  flex: 1;
   --wails-draggable: drag;
 }
+.drag-fill {
+  flex: 1;
+}
+
+/* brand mark */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 14px 0 13px;
+}
+.brand-name {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--text);
+}
+
 .controls {
   display: flex;
   align-items: stretch;
@@ -88,13 +113,22 @@ onBeforeUnmount(() => {
   border: none;
   background: transparent;
   color: var(--text-muted);
+  transition: background-color var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard);
 }
 .wc:hover {
-  background: var(--bg-hover);
+  background: var(--bg-hover-strong);
   color: var(--text);
 }
+.wc:active {
+  background: var(--bg-hover);
+}
 .wc.close:hover {
-  background: #e11d2e;
+  background: #c42b1c;
+  color: #fff;
+}
+.wc.close:active {
+  background: #b02717;
   color: #fff;
 }
 </style>

@@ -60,26 +60,42 @@ function dismiss() {
 <style scoped>
 .capture {
   position: fixed;
-  right: 16px;
-  bottom: 36px;
-  width: 320px;
+  right: 18px;
+  bottom: 44px;
+  width: 330px;
   background: var(--bg-surface);
   border: 1px solid var(--border-strong);
-  border-radius: 6px;
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-dialog);
   z-index: 250;
   overflow: hidden;
+  transform-origin: bottom right;
+  animation: capture-in var(--dur-slow) var(--ease-decel);
+}
+@keyframes capture-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 .cap-head {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 8px 8px 12px;
-  background: var(--accent);
-  color: #fff;
+  gap: 9px;
+  padding: 10px 8px 10px 14px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent) 82%, #33c0ff) 0%,
+    var(--accent) 100%
+  );
+  color: var(--text-on-accent);
 }
 .cap-head :deep(svg) {
-  color: #fff;
+  color: var(--text-on-accent);
 }
 .cap-title {
   flex: 1;

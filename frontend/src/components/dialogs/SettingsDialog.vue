@@ -217,44 +217,58 @@ async function chooseCategoryFolder(category: Category) {
 <style scoped>
 .settings {
   display: grid;
-  grid-template-columns: 150px 1fr;
+  grid-template-columns: 158px 1fr;
   gap: 0;
-  min-height: 320px;
-  margin: -14px -16px;
+  min-height: 340px;
+  margin: -6px -20px -20px;
 }
 .tabs {
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  background: var(--bg-panel);
+  gap: 2px;
+  background: var(--bg-subtle);
   border-right: 1px solid var(--border);
-  padding: 8px 6px;
+  padding: 12px 8px;
 }
 .tab {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 7px 10px;
+  gap: 10px;
+  padding: 8px 11px;
   border: 1px solid transparent;
   border-radius: var(--radius);
   background: transparent;
   color: var(--text);
   text-align: left;
   font-size: var(--fs);
+  transition: background-color var(--dur-fast) var(--ease-standard);
 }
 .tab :deep(svg) {
   color: var(--text-muted);
   flex: none;
+  transition: color var(--dur-fast) var(--ease-standard);
 }
 .tab:hover {
-  background: var(--bg-hover);
+  background: var(--bg-hover-strong);
 }
 .tab.active {
   background: var(--bg-selected);
   font-weight: 600;
 }
+.tab.active::before {
+  content: '';
+  position: absolute;
+  left: -2px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 15px;
+  border-radius: 3px;
+  background: var(--accent);
+}
 .tab.active :deep(svg) {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .panel {
   padding: 16px 18px;
