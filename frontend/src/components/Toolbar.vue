@@ -10,13 +10,11 @@ const emit = defineEmits<{
   (e: 'settings'): void;
   (e: 'delete'): void;
   (e: 'capture'): void;
-  (e: 'toggle-theme'): void;
 }>();
 
 const hasSel = computed(() => store.hasSelection);
 const canPause = computed(() => store.canPause);
 const canResume = computed(() => store.canResume);
-const isDark = computed(() => document.documentElement.getAttribute('data-theme') === 'dark');
 </script>
 
 <template>
@@ -60,9 +58,6 @@ const isDark = computed(() => document.documentElement.getAttribute('data-theme'
       <button class="tbtn ghost dev" @click="emit('capture')" title="Simulate a browser capture (dev)">
         <Icon name="link" :size="18" />
         <span>Capture</span>
-      </button>
-      <button class="tbtn ghost" @click="emit('toggle-theme')" :title="isDark ? 'Switch to light theme' : 'Switch to dark theme'">
-        <Icon :name="isDark ? 'sun' : 'moon'" :size="18" />
       </button>
       <button class="tbtn" @click="emit('settings')" title="Settings">
         <Icon name="settings" :size="18" />
@@ -158,23 +153,19 @@ const isDark = computed(() => document.documentElement.getAttribute('data-theme'
   color: var(--text-on-accent);
   padding: 0 16px;
   height: 36px;
-  background: linear-gradient(
-    var(--accent) 0%,
-    color-mix(in srgb, var(--accent) 90%, #000) 100%
-  );
-  border-color: transparent;
-  border-top-color: rgba(255, 255, 255, 0.28);
-  box-shadow: 0 1px 2px var(--accent-glow), var(--shadow-control);
+  /* Native WinUI accent button: flat fill, hairline top highlight. */
+  background: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 88%, #000);
+  border-top-color: color-mix(in srgb, var(--accent) 82%, #fff);
+  box-shadow: var(--shadow-control);
 }
 .tbtn.accent span {
   font-weight: 600;
 }
 .tbtn.accent:hover:not(:disabled) {
-  background: linear-gradient(
-    var(--accent-hover) 0%,
-    color-mix(in srgb, var(--accent-hover) 90%, #000) 100%
-  );
-  box-shadow: 0 2px 8px var(--accent-glow), var(--shadow-control);
+  background: var(--accent-hover);
+  border-color: color-mix(in srgb, var(--accent-hover) 88%, #000);
+  border-top-color: color-mix(in srgb, var(--accent-hover) 82%, #fff);
 }
 .tbtn.accent:active:not(:disabled) {
   background: var(--accent-pressed);

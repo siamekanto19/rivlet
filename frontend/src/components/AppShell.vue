@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useDownloadsStore } from '../stores/downloads';
+import { useUiStore } from '../stores/ui';
 import type { AddDownloadRequest, VideoInfo } from '../types';
 import TitleBar from './TitleBar.vue';
 import Toolbar from './Toolbar.vue';
@@ -12,18 +13,19 @@ import Icon from './Icon.vue';
 import AddUrlDialog from './dialogs/AddUrlDialog.vue';
 import VideoFormatDialog from './dialogs/VideoFormatDialog.vue';
 import PropertiesDialog from './dialogs/PropertiesDialog.vue';
-import SettingsDialog from './dialogs/SettingsDialog.vue';
+import SettingsPage from './SettingsPage.vue';
 import RemoveConfirmDialog from './dialogs/RemoveConfirmDialog.vue';
 import CapturePrompt from './dialogs/CapturePrompt.vue';
 
 const store = useDownloadsStore();
+const ui = useUiStore();
 
 // dialog + menu state
 const showAdd = ref(false);
-const showSettings = ref(false);
 const showRemove = ref(false);
 const propsId = ref<string | null>(null);
 const ctxMenu = ref<{ id: string; x: number; y: number } | null>(null);
+const searchEl = ref<HTMLInputElement | null>(null);
 
 // video add flow
 const videoInfo = ref<VideoInfo | null>(null);
@@ -96,6 +98,14 @@ function onOpenRow(id: string) {
 function onKey(e: KeyboardEvent) {
   const target = e.target as HTMLElement;
   const typing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
+
+  // Ctrl+F focuses search from anywhere (even while typing elsewhere).
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+    e.preventDefault();
+    searchEl.value?.focus();
+    searchEl.value?.select();
+    return;
+  }
   if (typing) return;
 
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') {
@@ -118,12 +128,15 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey));
   <div class="shell">
     <TitleBar />
 
+    <!-- Settings takes over the content area as a full page -->
+    <SettingsPage v-if="ui.view === 'settings'" />
+
+    <template v-else>
     <Toolbar
       @add="showAdd = true"
-      @settings="showSettings = true"
+      @settings="ui.openSettings()"
       @delete="showRemove = true"
       @capture="store.triggerCapture()"
-      @toggle-theme="$emit('toggle-theme')"
     />
 
     <!-- filter / search sub-bar -->
@@ -136,8 +149,9 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey));
       <div class="search">
         <Icon name="search" :size="14" />
         <input
+          ref="searchEl"
           type="search"
-          placeholder="Search downloads…"
+          placeholder="Search downloads   Ctrl+F"
           :value="store.searchQuery"
           @input="store.setSearch(($event.target as HTMLInputElement).value)"
         />
@@ -147,11 +161,17 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey));
     <div class="main">
       <CategorySidebar />
       <div class="content">
-        <DownloadTable @contextmenu="onRowContext" @open="onOpenRow" />
+        <DownloadTable
+          @contextmenu="onRowContext"
+          @open="onOpenRow"
+          @delete="showRemove = true"
+          @add="showAdd = true"
+        />
       </div>
     </div>
 
     <StatusBar />
+    </template>
 
     <!-- overlays -->
     <RowContextMenu
@@ -172,7 +192,6 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey));
       @select="onVideoSelect"
     />
     <PropertiesDialog v-if="propsId" :id="propsId" @close="propsId = null" />
-    <SettingsDialog v-if="showSettings && store.settings" @close="showSettings = false" />
     <RemoveConfirmDialog v-if="showRemove && store.hasSelection" @close="showRemove = false" />
     <CapturePrompt v-if="store.capturePrompt" :request="store.capturePrompt" />
   </div>

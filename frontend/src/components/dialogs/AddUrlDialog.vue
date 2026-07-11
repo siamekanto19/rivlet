@@ -18,17 +18,36 @@ const url = ref('');
 const filename = ref('');
 const category = ref('auto');
 const destination = ref('');
-const urlInput = ref<HTMLInputElement | null>(null);
+const urlInput = ref<HTMLTextAreaElement | null>(null);
 
 const categories = computed(() => store.settings?.categories ?? []);
 
+function isUrl(u: string): boolean {
+  return u.length > 3 && (/^https?:\/\//i.test(u) || u.startsWith('magnet:'));
+}
+
+// Paste one URL — or a whole list, one per line. Batch adds skip the video
+// format picker (a chain of modals would be hostile); each video takes its
+// default format instead.
+const urls = computed(() =>
+  url.value
+    .split(/\r?\n/)
+    .map((s) => s.trim())
+    .filter(isUrl),
+);
+const multi = computed(() => urls.value.length > 1);
+const inputRows = computed(() =>
+  Math.min(4, Math.max(1, url.value.split('\n').length)),
+);
+
 const kind = computed<DownloadKind | null>(() => {
-  const u = url.value.trim();
-  if (!u) return null;
-  return detectKind(u);
+  if (multi.value) return null;
+  const u = urls.value[0];
+  return u ? detectKind(u) : null;
 });
 
 const kindLabel = computed(() => {
+  if (multi.value) return `${urls.value.length} links detected — all will be added`;
   switch (kind.value) {
     case 'video':
       return 'Video — a format picker will open next';
@@ -41,10 +60,7 @@ const kindLabel = computed(() => {
   }
 });
 
-const valid = computed(() => {
-  const u = url.value.trim();
-  return u.length > 3 && (/^https?:\/\//i.test(u) || u.startsWith('magnet:'));
-});
+const valid = computed(() => urls.value.length >= 1);
 
 // Prefill from clipboard if it looks like a URL (mirrors IDM behavior).
 onMounted(async () => {
@@ -59,14 +75,24 @@ onMounted(async () => {
   urlInput.value?.focus();
 });
 
-function submit() {
+async function submit() {
   if (!valid.value) return;
-  const req: AddDownloadRequest = {
-    url: url.value.trim(),
-    filename: filename.value.trim() || undefined,
+  const shared = {
     category: category.value === 'auto' ? undefined : category.value,
     destinationPath: destination.value.trim() || undefined,
+  };
+  if (multi.value) {
+    for (const u of urls.value) {
+      await store.add({ url: u, kind: detectKind(u), ...shared });
+    }
+    emit('close');
+    return;
+  }
+  const req: AddDownloadRequest = {
+    url: urls.value[0],
+    filename: filename.value.trim() || undefined,
     kind: kind.value ?? undefined,
+    ...shared,
   };
   emit('submit', req);
 }
@@ -82,22 +108,23 @@ async function chooseDestination() {
       <label class="row">
         <span class="lab">Address</span>
         <div class="field">
-          <input
+          <textarea
             ref="urlInput"
             v-model="url"
-            type="text"
-            placeholder="https://…  or  magnet:?xt=…"
+            class="url-input"
+            :rows="inputRows"
+            placeholder="https://…  or  magnet:?xt=…  (one per line for a batch)"
             spellcheck="false"
-            @keyup.enter="submit"
+            @keydown.enter.exact.prevent="submit"
           />
-          <div v-if="kind" class="kind-hint">
-            <Icon :name="kind" :size="14" />
+          <div v-if="kindLabel" class="kind-hint">
+            <Icon :name="multi ? 'copy' : kind ?? 'http'" :size="14" />
             <span>{{ kindLabel }}</span>
           </div>
         </div>
       </label>
 
-      <label class="row">
+      <label class="row" v-if="!multi">
         <span class="lab">Save as</span>
         <input v-model="filename" type="text" placeholder="(auto from URL)" spellcheck="false" />
       </label>
@@ -130,7 +157,7 @@ async function chooseDestination() {
     <template #footer>
       <button class="btn" @click="emit('close')">Cancel</button>
       <button class="btn primary" :disabled="!valid" @click="submit">
-        {{ kind === 'video' ? 'Next…' : 'Download' }}
+        {{ multi ? `Download ${urls.length} files` : kind === 'video' ? 'Next…' : 'Download' }}
       </button>
     </template>
   </Modal>
@@ -193,6 +220,14 @@ async function chooseDestination() {
   align-items: center;
   gap: 6px;
   font-size: var(--fs-sm);
-  color: var(--accent);
+  color: var(--accent-text);
+}
+.url-input {
+  min-height: 32px;
+  resize: none;
+  overflow-y: auto;
+  line-height: 1.5;
+  padding-top: 5px;
+  padding-bottom: 5px;
 }
 </style>

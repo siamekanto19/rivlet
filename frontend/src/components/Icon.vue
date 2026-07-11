@@ -33,6 +33,15 @@ import {
   ClipboardIcon,
   DragDropVerticalIcon,
   Download04Icon,
+  FileZipIcon,
+  FileMusicIcon,
+  FileVideoIcon,
+  FileImageIcon,
+  FileCogIcon,
+  ComputerIcon,
+  PaintBoardIcon,
+  ArrowLeft01Icon,
+  Notification03Icon,
 } from '@hugeicons/core-free-icons';
 
 type IconData = readonly (readonly [string, Record<string, string | number>])[];
@@ -61,6 +70,10 @@ const map: Record<string, IconData> = {
   download: Download04Icon,
   chevron: ArrowDown01Icon,
   'chevron-right': ArrowRight01Icon,
+  back: ArrowLeft01Icon,
+  monitor: ComputerIcon,
+  appearance: PaintBoardIcon,
+  notification: Notification03Icon,
   close: Cancel01Icon,
   cross: Cancel01Icon,
   check: Tick02Icon,
@@ -70,6 +83,13 @@ const map: Record<string, IconData> = {
   gauge: DashboardSpeed02Icon,
   clipboard: ClipboardIcon,
   drag: DragDropVerticalIcon,
+  // file-type icons (see utils/fileType.ts)
+  'type-archive': FileZipIcon,
+  'type-audio': FileMusicIcon,
+  'type-video': FileVideoIcon,
+  'type-image': FileImageIcon,
+  'type-app': FileCogIcon,
+  'type-torrent': MagnetIcon,
 };
 
 const icon = computed<IconData>(() => map[props.name] ?? PlusSignIcon);

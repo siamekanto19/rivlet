@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue';
 import { useDownloadsStore } from '../stores/downloads';
-import { formatSpeed, formatBytes, parseSpeedToBps } from '../utils/format';
+import { formatSpeed, formatBytes, formatEta, parseSpeedToBps } from '../utils/format';
 import Icon from './Icon.vue';
 
 const store = useDownloadsStore();
@@ -10,6 +10,14 @@ const totalSpeed = computed(() => store.totalSpeedBps);
 const activeCount = computed(() => store.activeCount);
 const queuedCount = computed(() => store.queuedCount);
 const limit = computed(() => store.settings?.globalSpeedLimitBps ?? null);
+
+// Longest remaining ETA across active downloads — "when will it all be done".
+const remaining = computed(() => {
+  const etas = store.downloads
+    .filter((d) => d.state === 'active' && d.etaSeconds != null)
+    .map((d) => d.etaSeconds as number);
+  return etas.length ? Math.max(...etas) : null;
+});
 
 const menuOpen = ref(false);
 const customValue = ref('');
@@ -41,6 +49,11 @@ function applyCustom() {
       <Icon name="gauge" :size="13" />
       <span class="tnum">{{ totalSpeed > 0 ? formatSpeed(totalSpeed) : 'Idle' }}</span>
     </div>
+
+    <template v-if="remaining != null">
+      <div class="sep" />
+      <div class="cell tnum">about {{ formatEta(remaining) }} left</div>
+    </template>
 
     <div class="sep" />
     <div class="cell">

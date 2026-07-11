@@ -1,36 +1,41 @@
 <script lang="ts" setup>
 import { reactive, ref } from 'vue';
-import { useDownloadsStore } from '../../stores/downloads';
-import type { Category, Settings } from '../../types';
-import { parseSpeedToBps } from '../../utils/format';
-import Icon from '../Icon.vue';
-import Modal from './Modal.vue';
-import { pickFolder } from '../../services/folderPicker';
+import { useDownloadsStore } from '../stores/downloads';
+import { useUiStore } from '../stores/ui';
+import type { Category, Settings } from '../types';
+import { parseSpeedToBps } from '../utils/format';
+import Icon from './Icon.vue';
+import { pickFolder } from '../services/folderPicker';
 
 const store = useDownloadsStore();
-const emit = defineEmits<{ (e: 'close'): void }>();
+const ui = useUiStore();
 
-type Tab = 'general' | 'downloads' | 'categories' | 'schedule' | 'notifications';
+type Tab = 'general' | 'appearance' | 'downloads' | 'categories' | 'schedule' | 'notifications';
 const tabs: { id: Tab; label: string; icon: string }[] = [
   { id: 'general', label: 'General', icon: 'settings' },
+  { id: 'appearance', label: 'Appearance', icon: 'appearance' },
   { id: 'downloads', label: 'Downloads', icon: 'http' },
   { id: 'categories', label: 'Categories', icon: 'folder' },
   { id: 'schedule', label: 'Schedule', icon: 'scheduler' },
-  { id: 'notifications', label: 'Notifications', icon: 'info' },
+  { id: 'notifications', label: 'Notifications', icon: 'notification' },
 ];
 const active = ref<Tab>('general');
 
-// working copy
+const themeOptions: { id: 'light' | 'dark' | 'system'; label: string; icon: string }[] = [
+  { id: 'light', label: 'Light', icon: 'sun' },
+  { id: 'dark', label: 'Dark', icon: 'moon' },
+  { id: 'system', label: 'System', icon: 'monitor' },
+];
+
+// working copy of persisted settings (theme is applied live, separately)
 const src = store.settings as Settings;
 const draft = reactive<Settings>(JSON.parse(JSON.stringify(src)));
 
-// global speed limit as a KB/s field
 const limitOn = ref(draft.globalSpeedLimitBps != null);
 const limitKb = ref(
   draft.globalSpeedLimitBps != null ? Math.round(draft.globalSpeedLimitBps / 1024) : 500,
 );
 
-// category editing
 const newCatName = ref('');
 function addCategory() {
   const name = newCatName.value.trim();
@@ -63,23 +68,30 @@ function save() {
   draft.globalSpeedLimitBps = limitOn.value ? parseSpeedToBps(String(limitKb.value), 'KB') : null;
   if (!draft.schedule) draft.schedule = { enabled: false, startHHmm: '01:00', stopHHmm: '08:00' };
   store.updateSettings(JSON.parse(JSON.stringify(draft)));
-  emit('close');
+  ui.closeSettings();
 }
 
 async function chooseDefaultFolder() {
   draft.downloadDir = await pickFolder(draft.downloadDir);
 }
-
 async function chooseCategoryFolder(category: Category) {
   category.folder = await pickFolder(category.folder || draft.downloadDir);
 }
 </script>
 
 <template>
-  <Modal title="Settings" width="640px" @close="emit('close')">
-    <div class="settings">
-      <!-- tab rail -->
-      <div class="tabs">
+  <div class="settings-page">
+    <!-- page header -->
+    <div class="sp-head">
+      <button class="back" @click="ui.closeSettings()" title="Back to downloads" aria-label="Back">
+        <Icon name="back" :size="18" />
+      </button>
+      <h1>Settings</h1>
+    </div>
+
+    <div class="sp-body">
+      <!-- nav rail -->
+      <nav class="tabs">
         <button
           v-for="t in tabs"
           :key="t.id"
@@ -87,15 +99,16 @@ async function chooseCategoryFolder(category: Category) {
           :class="{ active: active === t.id }"
           @click="active = t.id"
         >
-          <Icon :name="t.icon" :size="15" />
+          <span class="pill" />
+          <Icon :name="t.icon" :size="16" />
           <span>{{ t.label }}</span>
         </button>
-      </div>
+      </nav>
 
       <!-- panels -->
       <div class="panel">
         <!-- GENERAL -->
-        <div v-show="active === 'general'" class="pane">
+        <section v-show="active === 'general'" class="pane">
           <div class="frow">
             <label>Default download folder</label>
             <div class="folder-control">
@@ -112,10 +125,32 @@ async function chooseCategoryFolder(category: Category) {
             </label>
             <span class="hint">Offer to capture URLs copied to the clipboard.</span>
           </div>
-        </div>
+        </section>
+
+        <!-- APPEARANCE -->
+        <section v-show="active === 'appearance'" class="pane">
+          <div class="frow">
+            <label>Theme</label>
+            <span class="hint">Choose how Grabby looks. “System” follows your Windows theme.</span>
+            <div class="seg" role="radiogroup" aria-label="Theme">
+              <button
+                v-for="o in themeOptions"
+                :key="o.id"
+                class="seg-btn"
+                :class="{ on: ui.themePref === o.id }"
+                role="radio"
+                :aria-checked="ui.themePref === o.id"
+                @click="ui.setTheme(o.id)"
+              >
+                <Icon :name="o.icon" :size="16" />
+                <span>{{ o.label }}</span>
+              </button>
+            </div>
+          </div>
+        </section>
 
         <!-- DOWNLOADS -->
-        <div v-show="active === 'downloads'" class="pane">
+        <section v-show="active === 'downloads'" class="pane">
           <div class="frow inline">
             <label>Maximum concurrent downloads</label>
             <input class="narrow" type="number" min="1" max="16" v-model.number="draft.maxConcurrent" />
@@ -136,10 +171,10 @@ async function chooseCategoryFolder(category: Category) {
               Shut down computer when all downloads complete
             </label>
           </div>
-        </div>
+        </section>
 
         <!-- CATEGORIES -->
-        <div v-show="active === 'categories'" class="pane">
+        <section v-show="active === 'categories'" class="pane">
           <div class="cat-add">
             <input v-model="newCatName" type="text" placeholder="New category name" @keyup.enter="addCategory" />
             <button class="btn" @click="addCategory">Add</button>
@@ -172,10 +207,10 @@ async function chooseCategoryFolder(category: Category) {
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
         <!-- SCHEDULE -->
-        <div v-show="active === 'schedule'" class="pane">
+        <section v-show="active === 'schedule'" class="pane">
           <template v-if="draft.schedule">
             <div class="frow">
               <label class="chk">
@@ -193,49 +228,104 @@ async function chooseCategoryFolder(category: Category) {
               <input class="narrow" type="time" v-model="draft.schedule.stopHHmm" :disabled="!draft.schedule.enabled" />
             </div>
           </template>
-        </div>
+        </section>
 
         <!-- NOTIFICATIONS -->
-        <div v-show="active === 'notifications'" class="pane">
+        <section v-show="active === 'notifications'" class="pane">
           <div class="frow">
             <label class="chk">
               <input type="checkbox" v-model="draft.notifyOnComplete" />
               Show a notification when a download completes
             </label>
           </div>
-        </div>
+        </section>
       </div>
     </div>
 
-    <template #footer>
-      <button class="btn" @click="emit('close')">Cancel</button>
-      <button class="btn primary" @click="save">Save</button>
-    </template>
-  </Modal>
+    <!-- footer -->
+    <div class="sp-foot">
+      <button class="btn" @click="ui.closeSettings()">Discard</button>
+      <button class="btn primary" @click="save">Save changes</button>
+    </div>
+  </div>
 </template>
 
 <style scoped>
-.settings {
+.settings-page {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-surface);
+  margin: 0 10px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  animation: page-in var(--dur-slow) var(--ease-decel);
+}
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.sp-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  flex: none;
+}
+.back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-muted);
+  transition: background-color var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard);
+}
+.back:hover {
+  background: var(--bg-hover-strong);
+  color: var(--text);
+}
+.sp-head h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.sp-body {
+  flex: 1;
+  min-height: 0;
   display: grid;
-  grid-template-columns: 158px 1fr;
-  gap: 0;
-  min-height: 340px;
-  margin: -6px -20px -20px;
+  grid-template-columns: 190px 1fr;
 }
 .tabs {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  background: var(--bg-subtle);
-  border-right: 1px solid var(--border);
   padding: 12px 8px;
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
 }
 .tab {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 11px;
+  gap: 11px;
+  padding: 8px 12px;
   border: 1px solid transparent;
   border-radius: var(--radius);
   background: transparent;
@@ -256,34 +346,37 @@ async function chooseCategoryFolder(category: Category) {
   background: var(--bg-selected);
   font-weight: 600;
 }
-.tab.active::before {
-  content: '';
-  position: absolute;
-  left: -2px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 3px;
-  height: 15px;
-  border-radius: 3px;
-  background: var(--accent);
-}
 .tab.active :deep(svg) {
   color: var(--accent-text);
 }
+.pill {
+  position: absolute;
+  left: -2px;
+  top: 50%;
+  width: 3px;
+  height: 0;
+  border-radius: 3px;
+  background: var(--accent);
+  transform: translateY(-50%);
+  transition: height var(--dur-slow) var(--ease-decel);
+}
+.tab.active .pill {
+  height: 16px;
+}
 .panel {
-  padding: 16px 18px;
+  padding: 22px 26px;
   overflow-y: auto;
-  max-height: 60vh;
 }
 .pane {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
+  max-width: 560px;
 }
 .frow {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
 }
 .frow.inline {
   flex-direction: row;
@@ -295,12 +388,14 @@ async function chooseCategoryFolder(category: Category) {
 }
 .frow > label {
   font-size: var(--fs);
+  font-weight: 600;
   color: var(--text);
 }
 .chk {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
+  font-weight: 400 !important;
 }
 .hint {
   font-size: var(--fs-sm);
@@ -310,11 +405,53 @@ async function chooseCategoryFolder(category: Category) {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding-left: 22px;
+  padding-left: 29px;
 }
 .narrow {
-  width: 90px;
+  width: 92px;
 }
+
+/* theme segmented control */
+.seg {
+  display: inline-flex;
+  gap: 4px;
+  margin-top: 4px;
+  padding: 4px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  width: fit-content;
+}
+.seg-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--fs);
+  font-weight: 500;
+  transition: background-color var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard),
+    box-shadow var(--dur-fast) var(--ease-standard);
+}
+.seg-btn:hover:not(.on) {
+  background: var(--bg-hover-strong);
+  color: var(--text);
+}
+.seg-btn.on {
+  background: var(--bg-surface);
+  border-color: var(--border);
+  color: var(--accent-text);
+  font-weight: 600;
+  box-shadow: var(--shadow-control);
+}
+.seg-btn.on :deep(svg) {
+  color: var(--accent-text);
+}
+
 .folder-control {
   display: flex;
   gap: 8px;
@@ -332,14 +469,15 @@ async function chooseCategoryFolder(category: Category) {
   gap: 6px;
   height: 32px;
   padding: 0 12px;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius);
-  background: var(--bg-surface);
+  border: 1px solid var(--border-control);
+  border-bottom-color: var(--border-control-bottom);
+  border-radius: var(--radius-sm);
+  background: var(--bg-control);
   color: var(--text);
   font-weight: 600;
 }
 .browse:hover {
-  background: var(--bg-hover);
+  background: var(--bg-hover-strong);
 }
 .browse.icon-only {
   width: 34px;
@@ -349,7 +487,7 @@ async function chooseCategoryFolder(category: Category) {
 .cat-add {
   display: flex;
   gap: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 4px;
 }
 .cat-add input {
   flex: 1;
@@ -362,8 +500,8 @@ async function chooseCategoryFolder(category: Category) {
 .cat {
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 8px 10px;
-  background: var(--bg-panel);
+  padding: 10px 12px;
+  background: var(--bg-subtle);
 }
 .cat-head {
   display: flex;
@@ -385,7 +523,7 @@ async function chooseCategoryFolder(category: Category) {
   width: 24px;
   height: 24px;
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-sm);
   background: var(--bg-surface);
   color: var(--text-muted);
 }
@@ -397,11 +535,20 @@ async function chooseCategoryFolder(category: Category) {
 .cat-fields {
   display: grid;
   grid-template-columns: 84px 1fr;
-  gap: 6px 10px;
+  gap: 8px 10px;
   align-items: center;
 }
 .cat-fields label {
   font-size: var(--fs-sm);
   color: var(--text-muted);
+}
+.sp-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-subtle);
+  flex: none;
 }
 </style>

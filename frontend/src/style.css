@@ -80,6 +80,14 @@
   --progress-done-2: #0e8f0a;
   --progress-error: #d13438;
 
+  /* file-type icon tints — deliberately muted so the list doesn't rainbow */
+  --ft-archive: #a1740c;
+  --ft-audio: #8656c4;
+  --ft-video: #b4508e;
+  --ft-image: #3d7a52;
+  --ft-app: #4a6fa5;
+  --ft-torrent: #368372;
+
   /* sizing — compact, but with room to breathe */
   --row-h: 40px;
   --toolbar-h: 58px;
@@ -186,6 +194,13 @@
   --progress-done: #4ac26b;
   --progress-done-2: #3bb35c;
   --progress-error: #ff99a4;
+
+  --ft-archive: #d8b45e;
+  --ft-audio: #b794e8;
+  --ft-video: #e08cc0;
+  --ft-image: #7fc99a;
+  --ft-app: #8ab1e8;
+  --ft-torrent: #6fc4b1;
 
   --shadow-control: 0 1px 1px rgba(0, 0, 0, 0.3);
   --shadow-card: 0 2px 6px rgba(0, 0, 0, 0.4), 0 0 1px rgba(0, 0, 0, 0.5);
@@ -404,20 +419,17 @@ button {
   box-shadow: none;
 }
 .btn.primary {
-  background: linear-gradient(
-    var(--accent) 0%,
-    color-mix(in srgb, var(--accent) 92%, #000) 100%
-  );
-  border-color: transparent;
-  border-top-color: rgba(255, 255, 255, 0.22);
+  /* Native WinUI accent button: flat fill, hairline top highlight. */
+  background: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 88%, #000);
+  border-top-color: color-mix(in srgb, var(--accent) 82%, #fff);
   color: var(--text-on-accent);
   box-shadow: var(--shadow-control);
 }
 .btn.primary:hover {
-  background: linear-gradient(
-    var(--accent-hover) 0%,
-    color-mix(in srgb, var(--accent-hover) 92%, #000) 100%
-  );
+  background: var(--accent-hover);
+  border-color: color-mix(in srgb, var(--accent-hover) 88%, #000);
+  border-top-color: color-mix(in srgb, var(--accent-hover) 82%, #fff);
 }
 .btn.primary:active {
   background: var(--accent-pressed);
