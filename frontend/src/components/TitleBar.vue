@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import { onMounted, onBeforeUnmount, ref } from 'vue';
 import { windowControls } from '../services/window';
-import Icon from './Icon.vue';
 
 const maximised = ref(false);
 let poll: ReturnType<typeof setInterval> | null = null;
@@ -35,10 +34,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="titlebar">
     <!-- draggable region (Wails reads --wails-draggable) -->
-    <div class="drag">
-      <span class="brand-mark"><Icon name="download" :size="15" :stroke-width="2" /></span>
-      <span class="brand">IDM-next</span>
-    </div>
+    <div class="drag" />
 
     <!-- window controls -->
     <div class="controls">
@@ -75,28 +71,8 @@ onBeforeUnmount(() => {
   user-select: none;
 }
 .drag {
-  display: flex;
-  align-items: center;
-  gap: 9px;
   flex: 1;
-  padding: 0 14px;
   --wails-draggable: drag;
-}
-.brand-mark {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 5px;
-  background: var(--accent);
-  color: #fff;
-}
-.brand {
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-  color: var(--text);
 }
 .controls {
   display: flex;

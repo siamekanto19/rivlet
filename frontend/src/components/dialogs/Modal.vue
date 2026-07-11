@@ -35,7 +35,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey));
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 22, 33, 0.42);
+  background: rgba(0, 0, 0, 0.48);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -45,7 +46,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey));
 .dialog {
   background: var(--bg-surface);
   border: 1px solid var(--border-strong);
-  border-radius: 6px;
+  border-radius: 12px;
   box-shadow: var(--shadow-dialog);
   max-width: 92vw;
   max-height: 84vh;
@@ -57,7 +58,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey));
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 44px;
+  height: 48px;
   padding: 0 10px 0 18px;
   background: var(--bg-toolbar);
   border-bottom: 1px solid var(--border);

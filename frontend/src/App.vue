@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue';
 import { useDownloadsStore } from './stores/downloads';
 import AppShell from './components/AppShell.vue';
+import { windowControls } from './services/window';
 
 const store = useDownloadsStore();
 const theme = ref<'light' | 'dark'>('light');
@@ -9,6 +10,10 @@ const theme = ref<'light' | 'dark'>('light');
 function applyTheme(t: 'light' | 'dark') {
   theme.value = t;
   document.documentElement.setAttribute('data-theme', t);
+  // Keep the native WebView backing surface in sync, preventing a gray edge
+  // or flash around the frameless application window.
+  if (t === 'dark') windowControls.setBackgroundColour(0, 0, 0);
+  else windowControls.setBackgroundColour(238, 241, 245);
   try {
     localStorage.setItem('idm-theme', t);
   } catch {

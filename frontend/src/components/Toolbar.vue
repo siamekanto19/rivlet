@@ -21,16 +21,14 @@ const isDark = computed(() => document.documentElement.getAttribute('data-theme'
 
 <template>
   <div class="toolbar">
-    <div class="group">
+    <div class="group primary-group">
       <button class="tbtn accent" @click="emit('add')" title="Add a new download (Ctrl+N)">
         <Icon name="add" :size="18" />
         <span>Add URL</span>
       </button>
     </div>
 
-    <div class="sep" />
-
-    <div class="group">
+    <div class="group command-group" aria-label="Selected download actions">
       <button class="tbtn" :disabled="!canResume" @click="store.resumeSelected()" title="Resume selected">
         <Icon name="resume" :size="18" />
         <span>Resume</span>
@@ -39,33 +37,26 @@ const isDark = computed(() => document.documentElement.getAttribute('data-theme'
         <Icon name="pause" :size="18" />
         <span>Pause</span>
       </button>
-    </div>
-
-    <div class="sep" />
-
-    <div class="group">
-      <button class="tbtn" @click="store.resumeAll()" title="Resume all downloads">
-        <Icon name="resume-all" :size="18" />
-        <span>Resume All</span>
-      </button>
-      <button class="tbtn" @click="store.pauseAll()" title="Pause all downloads">
-        <Icon name="pause-all" :size="18" />
-        <span>Pause All</span>
-      </button>
-    </div>
-
-    <div class="sep" />
-
-    <div class="group">
       <button class="tbtn danger" :disabled="!hasSel" @click="emit('delete')" title="Remove selected">
         <Icon name="delete" :size="18" />
         <span>Delete</span>
       </button>
     </div>
 
+    <div class="group command-group" aria-label="Queue actions">
+      <button class="tbtn" @click="store.resumeAll()" title="Resume all downloads">
+        <Icon name="resume-all" :size="18" />
+        <span>Start all</span>
+      </button>
+      <button class="tbtn" @click="store.pauseAll()" title="Pause all downloads">
+        <Icon name="pause-all" :size="18" />
+        <span>Pause all</span>
+      </button>
+    </div>
+
     <div class="spacer" />
 
-    <div class="group">
+    <div class="group utility-group">
       <button class="tbtn ghost dev" @click="emit('capture')" title="Simulate a browser capture (dev)">
         <Icon name="link" :size="18" />
         <span>Capture</span>
@@ -86,7 +77,7 @@ const isDark = computed(() => document.documentElement.getAttribute('data-theme'
   display: flex;
   align-items: center;
   height: var(--toolbar-h);
-  padding: 0 12px;
+  padding: 8px 12px;
   background: var(--bg-toolbar);
   border-bottom: 1px solid var(--border-strong);
   gap: 4px;
@@ -97,31 +88,40 @@ const isDark = computed(() => document.documentElement.getAttribute('data-theme'
   align-items: stretch;
   gap: 4px;
 }
-.sep {
-  width: 1px;
-  height: 34px;
-  background: var(--border);
-  margin: 0 9px;
-}
 .spacer {
   flex: 1;
 }
 .tbtn {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  min-width: 58px;
-  height: 50px;
-  padding: 4px 10px;
+  gap: 7px;
+  min-width: 42px;
+  height: 36px;
+  padding: 0 12px;
   border: 1px solid transparent;
   border-radius: var(--radius);
   background: transparent;
   color: var(--text);
 }
+.command-group {
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bg-surface) 72%, transparent);
+}
+.command-group .tbtn {
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 7px;
+}
+.utility-group {
+  gap: 2px;
+}
 .tbtn span {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1;
 }
 .tbtn:hover:not(:disabled) {
@@ -136,11 +136,14 @@ const isDark = computed(() => document.documentElement.getAttribute('data-theme'
   opacity: 0.55;
 }
 .tbtn.accent {
-  color: var(--accent);
+  color: var(--text-inverse);
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
 }
 .tbtn.accent:hover:not(:disabled) {
-  background: var(--accent-soft);
-  border-color: var(--accent);
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
 }
 .tbtn.danger:hover:not(:disabled) {
   color: var(--st-error);
@@ -148,7 +151,8 @@ const isDark = computed(() => document.documentElement.getAttribute('data-theme'
   border-color: var(--st-error);
 }
 .tbtn.ghost {
-  min-width: 40px;
+  min-width: 36px;
+  padding: 0 9px;
   color: var(--text-muted);
 }
 .tbtn.dev {

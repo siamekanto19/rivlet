@@ -5,6 +5,7 @@ import type { Category, Settings } from '../../types';
 import { parseSpeedToBps } from '../../utils/format';
 import Icon from '../Icon.vue';
 import Modal from './Modal.vue';
+import { pickFolder } from '../../services/folderPicker';
 
 const store = useDownloadsStore();
 const emit = defineEmits<{ (e: 'close'): void }>();
@@ -64,6 +65,14 @@ function save() {
   store.updateSettings(JSON.parse(JSON.stringify(draft)));
   emit('close');
 }
+
+async function chooseDefaultFolder() {
+  draft.downloadDir = await pickFolder(draft.downloadDir);
+}
+
+async function chooseCategoryFolder(category: Category) {
+  category.folder = await pickFolder(category.folder || draft.downloadDir);
+}
 </script>
 
 <template>
@@ -89,7 +98,12 @@ function save() {
         <div v-show="active === 'general'" class="pane">
           <div class="frow">
             <label>Default download folder</label>
-            <input v-model="draft.downloadDir" type="text" spellcheck="false" />
+            <div class="folder-control">
+              <input :value="draft.downloadDir" type="text" readonly />
+              <button class="browse" type="button" @click="chooseDefaultFolder">
+                <Icon name="folder" :size="15" /> Browse
+              </button>
+            </div>
           </div>
           <div class="frow">
             <label class="chk">
@@ -141,7 +155,12 @@ function save() {
               </div>
               <div class="cat-fields">
                 <label>Folder</label>
-                <input v-model="c.folder" type="text" spellcheck="false" />
+                <div class="folder-control compact">
+                  <input :value="c.folder" type="text" readonly />
+                  <button class="browse icon-only" type="button" @click="chooseCategoryFolder(c)" title="Choose folder">
+                    <Icon name="folder" :size="15" />
+                  </button>
+                </div>
                 <label>Extensions</label>
                 <input
                   :value="extText(c)"
@@ -281,6 +300,37 @@ function save() {
 }
 .narrow {
   width: 90px;
+}
+.folder-control {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+}
+.folder-control input {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-muted);
+}
+.browse {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--bg-surface);
+  color: var(--text);
+  font-weight: 600;
+}
+.browse:hover {
+  background: var(--bg-hover);
+}
+.browse.icon-only {
+  width: 34px;
+  padding: 0;
+  flex: none;
 }
 .cat-add {
   display: flex;

@@ -5,6 +5,7 @@ import { detectKind } from '../../services/MockDownloadService';
 import type { AddDownloadRequest, DownloadKind } from '../../types';
 import Icon from '../Icon.vue';
 import Modal from './Modal.vue';
+import { pickFolder } from '../../services/folderPicker';
 
 const store = useDownloadsStore();
 
@@ -69,6 +70,10 @@ function submit() {
   };
   emit('submit', req);
 }
+
+async function chooseDestination() {
+  destination.value = await pickFolder(destination.value || store.settings?.downloadDir || '');
+}
 </script>
 
 <template>
@@ -105,15 +110,21 @@ function submit() {
         </select>
       </label>
 
-      <label class="row">
+      <div class="row">
         <span class="lab">Save to</span>
-        <input
-          v-model="destination"
-          type="text"
-          :placeholder="store.settings?.downloadDir ?? '(default download folder)'"
-          spellcheck="false"
-        />
-      </label>
+        <div class="folder-control">
+          <input
+            :value="destination || store.settings?.downloadDir || ''"
+            type="text"
+            placeholder="Default download folder"
+            readonly
+          />
+          <button class="browse" type="button" @click="chooseDestination">
+            <Icon name="folder" :size="15" />
+            Browse
+          </button>
+        </div>
+      </div>
     </div>
 
     <template #footer>
@@ -151,6 +162,31 @@ function submit() {
 .row > input,
 .row > select {
   width: 100%;
+}
+.folder-control {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+}
+.folder-control input {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-muted);
+}
+.browse {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--bg-surface);
+  color: var(--text);
+  font-weight: 600;
+}
+.browse:hover {
+  background: var(--bg-hover);
 }
 .kind-hint {
   display: flex;

@@ -6,6 +6,7 @@ interface WailsRuntime {
   WindowMinimise?: () => void;
   WindowToggleMaximise?: () => void;
   WindowIsMaximised?: () => Promise<boolean>;
+  WindowSetBackgroundColour?: (r: number, g: number, b: number, a: number) => void;
   Quit?: () => void;
 }
 
@@ -29,6 +30,9 @@ export const windowControls = {
     } catch {
       return false;
     }
+  },
+  setBackgroundColour(r: number, g: number, b: number, a = 255): void {
+    rt()?.WindowSetBackgroundColour?.(r, g, b, a);
   },
   quit(): void {
     const r = rt();

@@ -191,8 +191,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey));
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 38px;
-  padding: 0 14px;
+  height: 46px;
+  padding: 0 16px;
   background: var(--bg-panel);
   border-bottom: 1px solid var(--border);
   flex: none;
@@ -213,7 +213,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey));
   font-weight: 500;
   background: var(--bg-surface);
   border: 1px solid var(--border);
-  border-radius: 9px;
+  border-radius: 10px;
   padding: 0 6px;
 }
 .search {
@@ -224,8 +224,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey));
   border: 1px solid var(--border-strong);
   border-radius: var(--radius);
   padding: 0 10px;
-  height: 27px;
-  width: 260px;
+  height: 32px;
+  width: 280px;
 }
 .search:focus-within {
   border-color: var(--accent);
@@ -240,7 +240,14 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey));
   padding: 0;
   flex: 1;
   height: 100%;
+  min-height: 0;
+  line-height: normal;
   outline: none;
+  box-shadow: none;
+}
+.search input:focus {
+  border: none;
+  box-shadow: none;
 }
 .search input::-webkit-search-cancel-button {
   cursor: pointer;
@@ -249,11 +256,15 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey));
   flex: 1;
   display: flex;
   min-height: 0;
+  padding: 0 8px 8px;
+  gap: 8px;
 }
 .content {
   flex: 1;
   min-width: 0;
   display: flex;
-  border-left: none;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
 }
 </style>

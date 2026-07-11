@@ -5,7 +5,7 @@ import type {
   DownloadState,
   Settings,
 } from '../types';
-import { downloadService } from '../services/MockDownloadService';
+import { downloadService } from '../services/WailsDownloadService';
 
 export type SortKey =
   | 'filename'

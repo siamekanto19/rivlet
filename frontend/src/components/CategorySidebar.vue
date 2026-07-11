@@ -64,12 +64,12 @@ function pick(cat: string) {
 
 <style scoped>
 .sidebar {
-  width: 194px;
+  width: 210px;
   flex: none;
   background: var(--bg-panel);
   border-right: 1px solid var(--border-strong);
   overflow-y: auto;
-  padding: 10px 0;
+  padding: 12px 8px;
   user-select: none;
 }
 .sb-section {
@@ -81,26 +81,26 @@ function pick(cat: string) {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-faint);
-  padding: 6px 16px;
+  padding: 6px 10px;
 }
 .sb-item {
   display: flex;
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 7px 12px 7px 16px;
+  min-height: 36px;
+  padding: 7px 10px;
   border: none;
   background: transparent;
   color: var(--text);
   text-align: left;
-  border-left: 2px solid transparent;
+  border-radius: 6px;
 }
 .sb-item:hover {
   background: var(--bg-hover);
 }
 .sb-item.active {
   background: var(--bg-selected);
-  border-left-color: var(--accent);
   font-weight: 600;
 }
 .sb-item :deep(svg) {

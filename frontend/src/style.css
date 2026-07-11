@@ -6,28 +6,28 @@
 
 :root {
   /* palette — light */
-  --bg-app: #eef1f5;
-  --bg-panel: #f6f8fa;
+  --bg-app: #f3f3f3;
+  --bg-panel: #f7f7f7;
   --bg-surface: #ffffff;
-  --bg-toolbar: #f3f5f8;
-  --bg-hover: #eaf1fb;
-  --bg-selected: #cfe2fb;
+  --bg-toolbar: rgba(250, 250, 250, 0.94);
+  --bg-hover: #e9e9e9;
+  --bg-selected: #dbeaf9;
   --bg-selected-inactive: #dde3ea;
-  --bg-header: #eef1f5;
-  --bg-stripe: #fafbfc;
+  --bg-header: #f8f8f8;
+  --bg-stripe: #fcfcfc;
 
-  --border: #d3d9e0;
-  --border-strong: #b7bfc9;
-  --border-subtle: #e4e8ed;
+  --border: #e3e3e3;
+  --border-strong: #d1d1d1;
+  --border-subtle: #ededed;
 
   --text: #1c2733;
   --text-muted: #5c6a7a;
   --text-faint: #8a95a3;
   --text-inverse: #ffffff;
 
-  --accent: #1b6ec2;
-  --accent-hover: #1760a8;
-  --accent-soft: #e3eefb;
+  --accent: #0067c0;
+  --accent-hover: #005a9e;
+  --accent-soft: #e5f1fb;
 
   /* state colors */
   --st-queued: #7a8290;
@@ -45,44 +45,47 @@
   --progress-error: #d0574b;
 
   /* sizing — compact, but with room to breathe */
-  --row-h: 34px;
-  --toolbar-h: 62px;
-  --status-h: 30px;
-  --titlebar-h: 36px;
-  --radius: 5px;
+  --row-h: 38px;
+  --toolbar-h: 56px;
+  --status-h: 32px;
+  --titlebar-h: 40px;
+  --radius: 8px;
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "Segoe UI Variable",
     Roboto, "Helvetica Neue", Arial, sans-serif;
   --mono: "Cascadia Mono", "Consolas", "SF Mono", ui-monospace, monospace;
   --fs: 13.5px;
   --fs-sm: 12px;
 
-  --shadow-menu: 0 4px 16px rgba(20, 30, 45, 0.18);
-  --shadow-dialog: 0 12px 48px rgba(15, 25, 40, 0.28);
+  --shadow-menu: 0 8px 24px rgba(0, 0, 0, 0.14), 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-dialog: 0 24px 64px rgba(0, 0, 0, 0.24), 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
 :root[data-theme='dark'] {
-  --bg-app: #1b2330;
-  --bg-panel: #202a38;
-  --bg-surface: #232e3d;
-  --bg-toolbar: #202a38;
-  --bg-hover: #2b3a4d;
-  --bg-selected: #204a73;
-  --bg-selected-inactive: #2d3a49;
-  --bg-header: #1b2330;
-  --bg-stripe: #26313f;
+  /* True-black theme. Structural separation comes from borders and interaction
+     states rather than charcoal panel fills. */
+  color-scheme: dark;
+  --bg-app: #000000;
+  --bg-panel: #000000;
+  --bg-surface: #000000;
+  --bg-toolbar: #000000;
+  --bg-hover: #171717;
+  --bg-selected: #0b2e4f;
+  --bg-selected-inactive: #111111;
+  --bg-header: #000000;
+  --bg-stripe: #000000;
 
-  --border: #35404f;
-  --border-strong: #46525f;
-  --border-subtle: #2c3644;
+  --border: #292929;
+  --border-strong: #3a3a3a;
+  --border-subtle: #191919;
 
-  --text: #e6ecf3;
-  --text-muted: #9fb0c2;
-  --text-faint: #6f8092;
+  --text: #f2f2f2;
+  --text-muted: #b3b3b3;
+  --text-faint: #707070;
   --text-inverse: #ffffff;
 
   --accent: #4a9eea;
   --accent-hover: #63aef0;
-  --accent-soft: #24384f;
+  --accent-soft: #071b30;
 
   --st-queued: #93a1b1;
   --st-connecting: #d6a63c;
@@ -94,7 +97,7 @@
 
   --progress-fill: #3f9ae5;
   --progress-fill-2: #2f7fc9;
-  --progress-track: #2c3644;
+  --progress-track: #181818;
   --progress-done: #43b063;
   --progress-error: #d0574b;
 
@@ -166,18 +169,51 @@ textarea {
   background: var(--bg-surface);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius);
-  padding: 6px 9px;
+  height: 32px;
+  padding: 0 10px;
+  min-height: 32px;
+  line-height: 30px;
+  box-shadow: none;
   outline: none;
+  transition: border-color 80ms ease, box-shadow 80ms ease;
 }
 input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+textarea {
+  height: auto;
+  min-height: 72px;
+  padding-top: 7px;
+  padding-bottom: 7px;
+  line-height: 1.4;
+  resize: vertical;
+}
+select {
+  padding-right: 28px;
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-faint);
+  opacity: 1;
+}
+input:disabled,
+select:disabled,
+textarea:disabled {
+  color: var(--text-faint);
+  background: var(--bg-panel);
+  border-color: var(--border);
+  opacity: 1;
 }
 input[type='checkbox'] {
   accent-color: var(--accent);
   width: 14px;
   height: 14px;
+  min-height: 0;
+  padding: 0;
+  box-shadow: none;
 }
 label {
   color: var(--text);
@@ -192,12 +228,15 @@ button {
 /* generic button used in dialogs */
 .btn {
   font-size: var(--fs);
-  padding: 7px 16px;
+  padding: 7px 18px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius);
   background: var(--bg-surface);
   color: var(--text);
   min-width: 80px;
+  min-height: 32px;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 .btn:hover {
   background: var(--bg-hover);

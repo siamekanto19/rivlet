@@ -213,7 +213,7 @@ function clearDrag() {
   align-items: center;
   gap: 4px;
   padding: 0 11px;
-  height: 30px;
+  height: 36px;
   font-size: var(--fs-sm);
   font-weight: 600;
   color: var(--text-muted);
@@ -259,6 +259,7 @@ function clearDrag() {
 }
 .tr.selected {
   background: var(--bg-selected);
+  box-shadow: inset 3px 0 0 var(--accent);
 }
 .tr.dragging {
   opacity: 0.45;
