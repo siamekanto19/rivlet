@@ -293,7 +293,7 @@ function clearDrag() {
 .thead {
   display: grid;
   align-items: stretch;
-  background: var(--bg-header);
+  background: var(--bg-subtle);
   border-bottom: 1px solid var(--border);
   position: sticky;
   top: 0;

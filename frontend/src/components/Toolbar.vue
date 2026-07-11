@@ -9,7 +9,6 @@ const emit = defineEmits<{
   (e: 'add'): void;
   (e: 'settings'): void;
   (e: 'delete'): void;
-  (e: 'capture'): void;
 }>();
 
 const hasSel = computed(() => store.hasSelection);
@@ -55,10 +54,6 @@ const canResume = computed(() => store.canResume);
     <div class="spacer" />
 
     <div class="group utility-group">
-      <button class="tbtn ghost dev" @click="emit('capture')" title="Simulate a browser capture (dev)">
-        <Icon name="link" :size="18" />
-        <span>Capture</span>
-      </button>
       <button class="tbtn" @click="emit('settings')" title="Settings">
         <Icon name="settings" :size="18" />
         <span>Settings</span>
@@ -73,10 +68,9 @@ const canResume = computed(() => store.canResume);
   align-items: center;
   height: var(--toolbar-h);
   padding: 0 14px;
-  background: var(--bg-toolbar);
-  backdrop-filter: saturate(1.4) blur(20px);
-  -webkit-backdrop-filter: saturate(1.4) blur(20px);
-  border-bottom: 1px solid var(--border);
+  /* Transparent so it reads as the same Mica backdrop as the sub-bar and
+     sidebar — no distinct command-bar tint. */
+  background: transparent;
   gap: 6px;
   flex: none;
 }
@@ -175,13 +169,5 @@ const canResume = computed(() => store.canResume);
 .tbtn.danger:hover:not(:disabled) {
   color: var(--st-error);
   background: var(--st-error-bg);
-}
-.tbtn.ghost {
-  min-width: 36px;
-  padding: 0 10px;
-  color: var(--text-muted);
-}
-.tbtn.dev {
-  color: var(--text-muted);
 }
 </style>

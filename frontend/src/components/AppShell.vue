@@ -136,7 +136,6 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey));
       @add="showAdd = true"
       @settings="ui.openSettings()"
       @delete="showRemove = true"
-      @capture="store.triggerCapture()"
     />
 
     <!-- filter / search sub-bar -->

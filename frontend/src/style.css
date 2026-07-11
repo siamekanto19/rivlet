@@ -10,17 +10,22 @@
 :root {
   color-scheme: light;
 
-  /* ---- Fluent neutral layers (light) -------------------------------------
-     Base = the window backdrop (Mica). Layer sits above it (nav, toolbars).
-     Card/Surface is the brightest, for the data table + flyouts. */
+  /* ---- Surface system (light) --------------------------------------------
+     Exactly three tiers, used consistently everywhere:
+       • base    — the Mica window backdrop; all chrome floats on it
+                   (title bar, toolbar, sub-bar, sidebar, status bar)
+       • surface — the one elevated white: cards, table, dialogs, flyouts
+       • subtle  — the one recessed inset within a surface: table header,
+                   footers, category cards, segmented tracks, disabled fields
+     Keeping it to three stops the "some parts grey-white, some full-white"
+     drift that many near-identical tokens caused. */
   --mica-base: #f2f4f7;
   --mica-tint: #eaeef4;
   --bg-app: #f3f3f3;
-  --bg-panel: #f9fafb; /* nav / sidebar layer */
-  --bg-surface: #ffffff; /* card / table surface / flyouts */
-  --bg-layer: #fbfcfd;
-  --bg-toolbar: rgba(249, 250, 252, 0.72); /* acrylic command surfaces */
-  --bg-subtle: #f4f6f8;
+  --bg-surface: #ffffff;
+  --bg-subtle: #f3f5f8;
+  --bg-toolbar: rgba(249, 250, 252, 0.72); /* translucent chrome over Mica */
+  --bg-control: #ffffff; /* text-field fill (matches surface) */
 
   /* interaction fills — Fluent uses translucent overlays, not solid grays */
   --bg-hover: rgba(0, 0, 0, 0.037);
@@ -29,9 +34,6 @@
   --bg-selected: #eaf1fb;
   --bg-selected-hover: #e0ebf9;
   --bg-selected-inactive: #eef0f2;
-  --bg-header: #fbfcfd;
-  --bg-stripe: transparent;
-  --bg-control: #ffffff; /* text field fill */
 
   --border: rgba(0, 0, 0, 0.078);
   --border-strong: rgba(0, 0, 0, 0.14);
@@ -133,11 +135,10 @@
   --mica-base: #1f2023;
   --mica-tint: #24262b;
   --bg-app: #202020;
-  --bg-panel: #262629; /* nav layer */
-  --bg-surface: #2b2b2e; /* card / table / flyouts */
-  --bg-layer: #2f2f33;
-  --bg-toolbar: rgba(43, 43, 46, 0.72);
-  --bg-subtle: #262628;
+  --bg-surface: #2b2b2e; /* card / table / dialogs / flyouts */
+  --bg-subtle: #242427; /* recessed inset within a surface */
+  --bg-toolbar: rgba(43, 43, 46, 0.72); /* translucent chrome over Mica */
+  --bg-control: rgba(255, 255, 255, 0.06);
 
   --bg-hover: rgba(255, 255, 255, 0.055);
   --bg-hover-strong: rgba(255, 255, 255, 0.09);
@@ -145,9 +146,6 @@
   --bg-selected: #123a5e;
   --bg-selected-hover: #164672;
   --bg-selected-inactive: #34343a;
-  --bg-header: #2b2b2e;
-  --bg-stripe: transparent;
-  --bg-control: rgba(255, 255, 255, 0.06);
 
   --border: rgba(255, 255, 255, 0.075);
   --border-strong: rgba(255, 255, 255, 0.12);

@@ -105,8 +105,9 @@ async function chooseCategoryFolder(category: Category) {
         </button>
       </nav>
 
-      <!-- panels -->
-      <div class="panel">
+      <!-- content card: white surface, mirrors the downloads table card -->
+      <div class="content-card">
+        <div class="panel">
         <!-- GENERAL -->
         <section v-show="active === 'general'" class="pane">
           <div class="frow">
@@ -239,29 +240,26 @@ async function chooseCategoryFolder(category: Category) {
             </label>
           </div>
         </section>
-      </div>
-    </div>
+        </div>
 
-    <!-- footer -->
-    <div class="sp-foot">
-      <button class="btn" @click="ui.closeSettings()">Discard</button>
-      <button class="btn primary" @click="save">Save changes</button>
+        <!-- footer -->
+        <div class="sp-foot">
+          <button class="btn" @click="ui.closeSettings()">Discard</button>
+          <button class="btn primary" @click="save">Save changes</button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+/* Mirrors the downloads page: chrome header + mica nav rail + white card. */
 .settings-page {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  background: var(--bg-surface);
-  margin: 0 10px 10px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card);
-  overflow: hidden;
+  background: transparent;
   animation: page-in var(--dur-slow) var(--ease-decel);
 }
 @keyframes page-in {
@@ -277,9 +275,9 @@ async function chooseCategoryFolder(category: Category) {
 .sp-head {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--border);
+  gap: 10px;
+  height: 50px;
+  padding: 0 16px 10px;
   flex: none;
 }
 .back {
@@ -302,23 +300,38 @@ async function chooseCategoryFolder(category: Category) {
 .sp-head h1 {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 19px;
+  font-size: 18px;
   font-weight: 600;
   letter-spacing: -0.01em;
 }
 .sp-body {
   flex: 1;
   min-height: 0;
-  display: grid;
-  grid-template-columns: 190px 1fr;
+  display: flex;
+  padding: 0 10px 10px;
+  gap: 10px;
 }
+/* nav rail — floats on the Mica backdrop, exactly like the download sidebar */
 .tabs {
+  width: 190px;
+  flex: none;
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 12px 8px;
-  border-right: 1px solid var(--border);
+  padding: 4px 6px;
   overflow-y: auto;
+}
+/* white content card — same surface, border, radius and shadow as the table */
+.content-card {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
 }
 .tab {
   position: relative;
@@ -351,7 +364,7 @@ async function chooseCategoryFolder(category: Category) {
 }
 .pill {
   position: absolute;
-  left: -2px;
+  left: 0;
   top: 50%;
   width: 3px;
   height: 0;
@@ -364,6 +377,8 @@ async function chooseCategoryFolder(category: Category) {
   height: 16px;
 }
 .panel {
+  flex: 1;
+  min-height: 0;
   padding: 22px 26px;
   overflow-y: auto;
 }
