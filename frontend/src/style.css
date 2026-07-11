@@ -1,0 +1,231 @@
+/* ==========================================================================
+   IDM-next — global styles
+   Dense, information-first, utilitarian. Native fonts, tight spacing,
+   no animation beyond progress. Light theme by default; dark supported.
+   ========================================================================== */
+
+:root {
+  /* palette — light */
+  --bg-app: #eef1f5;
+  --bg-panel: #f6f8fa;
+  --bg-surface: #ffffff;
+  --bg-toolbar: #f3f5f8;
+  --bg-hover: #eaf1fb;
+  --bg-selected: #cfe2fb;
+  --bg-selected-inactive: #dde3ea;
+  --bg-header: #eef1f5;
+  --bg-stripe: #fafbfc;
+
+  --border: #d3d9e0;
+  --border-strong: #b7bfc9;
+  --border-subtle: #e4e8ed;
+
+  --text: #1c2733;
+  --text-muted: #5c6a7a;
+  --text-faint: #8a95a3;
+  --text-inverse: #ffffff;
+
+  --accent: #1b6ec2;
+  --accent-hover: #1760a8;
+  --accent-soft: #e3eefb;
+
+  /* state colors */
+  --st-queued: #7a8290;
+  --st-connecting: #b07d17;
+  --st-active: #1b8f3a;
+  --st-paused: #9a6b00;
+  --st-completed: #2a7d2e;
+  --st-error: #c0392b;
+  --st-canceled: #8a95a3;
+
+  --progress-fill: #2f8fe0;
+  --progress-fill-2: #1b6ec2;
+  --progress-track: #dde3ea;
+  --progress-done: #34a853;
+  --progress-error: #d0574b;
+
+  /* sizing — compact, but with room to breathe */
+  --row-h: 34px;
+  --toolbar-h: 62px;
+  --status-h: 30px;
+  --titlebar-h: 36px;
+  --radius: 5px;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "Segoe UI Variable",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: "Cascadia Mono", "Consolas", "SF Mono", ui-monospace, monospace;
+  --fs: 13.5px;
+  --fs-sm: 12px;
+
+  --shadow-menu: 0 4px 16px rgba(20, 30, 45, 0.18);
+  --shadow-dialog: 0 12px 48px rgba(15, 25, 40, 0.28);
+}
+
+:root[data-theme='dark'] {
+  --bg-app: #1b2330;
+  --bg-panel: #202a38;
+  --bg-surface: #232e3d;
+  --bg-toolbar: #202a38;
+  --bg-hover: #2b3a4d;
+  --bg-selected: #204a73;
+  --bg-selected-inactive: #2d3a49;
+  --bg-header: #1b2330;
+  --bg-stripe: #26313f;
+
+  --border: #35404f;
+  --border-strong: #46525f;
+  --border-subtle: #2c3644;
+
+  --text: #e6ecf3;
+  --text-muted: #9fb0c2;
+  --text-faint: #6f8092;
+  --text-inverse: #ffffff;
+
+  --accent: #4a9eea;
+  --accent-hover: #63aef0;
+  --accent-soft: #24384f;
+
+  --st-queued: #93a1b1;
+  --st-connecting: #d6a63c;
+  --st-active: #4cc76a;
+  --st-paused: #d6b24c;
+  --st-completed: #5bd07a;
+  --st-error: #ec6b5e;
+  --st-canceled: #7d8a99;
+
+  --progress-fill: #3f9ae5;
+  --progress-fill-2: #2f7fc9;
+  --progress-track: #2c3644;
+  --progress-done: #43b063;
+  --progress-error: #d0574b;
+
+  --shadow-menu: 0 4px 18px rgba(0, 0, 0, 0.5);
+  --shadow-dialog: 0 12px 48px rgba(0, 0, 0, 0.55);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font);
+  font-size: var(--fs);
+  color: var(--text);
+  background: var(--bg-app);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  user-select: none;
+  cursor: default;
+}
+
+#app {
+  height: 100vh;
+  width: 100vw;
+}
+
+/* scrollbars — thin, native-ish */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border: 3px solid var(--bg-surface);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-faint);
+}
+
+/* focus */
+:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+
+/* form controls — plain, native feel */
+input[type='text'],
+input[type='number'],
+input[type='search'],
+input[type='time'],
+select,
+textarea {
+  font-family: var(--font);
+  font-size: var(--fs);
+  color: var(--text);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 6px 9px;
+  outline: none;
+}
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--accent);
+}
+input[type='checkbox'] {
+  accent-color: var(--accent);
+  width: 14px;
+  height: 14px;
+}
+label {
+  color: var(--text);
+}
+
+button {
+  font-family: var(--font);
+  font-size: var(--fs);
+  cursor: default;
+}
+
+/* generic button used in dialogs */
+.btn {
+  font-size: var(--fs);
+  padding: 7px 16px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--bg-surface);
+  color: var(--text);
+  min-width: 80px;
+}
+.btn:hover {
+  background: var(--bg-hover);
+}
+.btn:disabled {
+  opacity: 0.5;
+}
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--text-inverse);
+}
+.btn.primary:hover {
+  background: var(--accent-hover);
+}
+.btn.danger {
+  color: var(--st-error);
+  border-color: var(--st-error);
+}
+.btn.danger:hover {
+  background: var(--st-error);
+  color: #fff;
+}
+
+.mono {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
