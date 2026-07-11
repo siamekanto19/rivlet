@@ -22,6 +22,10 @@ export function GetSettings() {
   return window['go']['main']['App']['GetSettings']();
 }
 
+export function GetSystemAccent() {
+  return window['go']['main']['App']['GetSystemAccent']();
+}
+
 export function ListDownloads() {
   return window['go']['main']['App']['ListDownloads']();
 }

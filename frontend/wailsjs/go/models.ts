@@ -260,3 +260,32 @@ export namespace backend {
 
 }
 
+export namespace main {
+	
+	export class AccentPalette {
+	    accent: string;
+	    light1: string;
+	    light2: string;
+	    light3: string;
+	    dark1: string;
+	    dark2: string;
+	    dark3: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new AccentPalette(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.accent = source["accent"];
+	        this.light1 = source["light1"];
+	        this.light2 = source["light2"];
+	        this.light3 = source["light3"];
+	        this.dark1 = source["dark1"];
+	        this.dark2 = source["dark2"];
+	        this.dark3 = source["dark3"];
+	    }
+	}
+
+}
+

@@ -16,6 +16,7 @@ function onMiniClose() {
 
 onMounted(() => {
   ui.initTheme();
+  ui.initAccent();
   store.init();
 });
 </script>
