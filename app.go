@@ -146,10 +146,10 @@ func (a *App) handleCapture(conn net.Conn) {
 			response.Error = err.Error()
 			break
 		}
-		add = backend.AddRequest{URL: payload.URL, Filename: payload.SuggestedFilename, Kind: "http", Referrer: payload.Referrer, UserAgent: payload.UserAgent, Browser: request.Source.Browser}
+		add = backend.AddRequest{URL: payload.URL, Filename: payload.SuggestedFilename, Kind: "http", Referrer: payload.Referrer, UserAgent: payload.UserAgent, Browser: request.Source.Browser, CookieHeader: payload.CookieHeader}
 		if request.Action == "capture.download" {
-			if ok, reason := captureAllowed(payload.URL, payload.SuggestedFilename, a.manager.GetSettings()); !ok {
-				response.Error = reason
+			if siteExcluded(payload.URL, a.manager.GetSettings().ExcludedSites) {
+				response.Error = "This site is excluded by Grabify settings"
 				break
 			}
 			download, err := a.manager.Add(add)
@@ -191,8 +191,26 @@ func (a *App) handleCapture(conn net.Conn) {
 		}
 		add = backend.AddRequest{URL: payload.PageURL, Filename: payload.Title, Kind: "video", UserAgent: payload.UserAgent, Browser: request.Source.Browser, BrowserProfile: profile}
 		response.OK = true
+	case "capture.torrent":
+		var payload capture.LinkPayload
+		if err := json.Unmarshal(request.Payload, &payload); err != nil {
+			response.Error = "invalid torrent payload"
+			break
+		}
+		if !capture.IsMagnet(payload.URL) {
+			response.Error = "not a magnet link"
+			break
+		}
+		download, err := a.manager.Add(backend.AddRequest{URL: payload.URL, Kind: "torrent", Browser: request.Source.Browser})
+		if err != nil {
+			response.Error = err.Error()
+			break
+		}
+		response.OK = true
+		response.Data = map[string]any{"downloadId": download.ID}
+		a.showWindow() // bring Grabify forward so the user sees the torrent was taken
 	}
-	if response.OK && request.Action != "health" && request.Action != "capture.download" {
+	if response.OK && request.Action != "health" && request.Action != "capture.download" && request.Action != "capture.torrent" {
 		// The UI shows a small capture popup and brings the window up itself
 		// (at popup size), so we don't pre-show the full-size window here.
 		runtime.EventsEmit(a.ctx, "capturePrompt", add)

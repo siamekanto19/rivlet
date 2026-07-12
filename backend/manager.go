@@ -33,21 +33,22 @@ type persisted struct {
 	Limits    map[string]*int64 `json:"limits,omitempty"`
 }
 type Manager struct {
-	mu          sync.RWMutex
-	downloads   map[string]*Download
-	order       []string
-	settings    Settings
-	limits      map[string]*int64
-	cancels     map[string]context.CancelFunc
-	authSecrets map[string]string
-	statePath   string
-	db          *sql.DB
-	dbPath      string
-	client      *http.Client
-	clientMu    sync.RWMutex
-	emit        EventSink
-	wake        chan struct{}
-	closed      chan struct{}
+	mu             sync.RWMutex
+	downloads      map[string]*Download
+	order          []string
+	settings       Settings
+	limits         map[string]*int64
+	cancels        map[string]context.CancelFunc
+	authSecrets    map[string]string
+	browserCookies map[string]string
+	statePath      string
+	db             *sql.DB
+	dbPath         string
+	client         *http.Client
+	clientMu       sync.RWMutex
+	emit           EventSink
+	wake           chan struct{}
+	closed         chan struct{}
 }
 
 func NewManager(stateDir string, emit EventSink) (*Manager, error) {
@@ -86,7 +87,7 @@ func NewManager(stateDir string, emit EventSink) (*Manager, error) {
 		transport.TLSClientConfig = transport.TLSClientConfig.Clone()
 	}
 	transport.TLSClientConfig.NextProtos = []string{"http/1.1"}
-	m := &Manager{downloads: map[string]*Download{}, limits: map[string]*int64{}, cancels: map[string]context.CancelFunc{}, authSecrets: map[string]string{}, statePath: filepath.Join(stateDir, "state.json"), client: &http.Client{Transport: transport}, emit: emit, wake: make(chan struct{}, 1), closed: make(chan struct{})}
+	m := &Manager{downloads: map[string]*Download{}, limits: map[string]*int64{}, cancels: map[string]context.CancelFunc{}, authSecrets: map[string]string{}, browserCookies: map[string]string{}, statePath: filepath.Join(stateDir, "state.json"), client: &http.Client{Transport: transport}, emit: emit, wake: make(chan struct{}, 1), closed: make(chan struct{})}
 	m.settings = defaultSettings(dl)
 	m.normalizeSettings()
 	if err := m.openStore(filepath.Join(stateDir, "grabify.db")); err != nil {
@@ -228,6 +229,9 @@ func (m *Manager) Add(r AddRequest) (Download, error) {
 	d := &Download{ID: id, URL: r.URL, Filename: r.Filename, DestinationPath: r.DestinationPath, Category: r.Category, Kind: r.Kind, State: Queued, DateAdded: NowISO(), Referrer: r.Referrer, RequestUserAgent: r.UserAgent, VideoFormatID: r.VideoFormatID, BrowserProfile: r.BrowserProfile, Browser: r.Browser, ExpectedSHA256: expectedHash, QueueID: queueID, Priority: r.Priority, AuthScheme: strings.ToLower(r.AuthScheme), AuthUsername: r.AuthUsername, CredentialTarget: credentialTarget}
 	if r.AuthSecret != "" && !r.RememberCredential {
 		m.authSecrets[id] = r.AuthSecret
+	}
+	if r.CookieHeader != "" {
+		m.browserCookies[id] = r.CookieHeader
 	}
 	m.downloads[id] = d
 	m.order = append([]string{id}, m.order...)
@@ -1093,6 +1097,12 @@ func (m *Manager) fetchSegment(ctx context.Context, id string, f *os.File, s Seg
 	}
 }
 func (m *Manager) applyAuthentication(req *http.Request, d Download) error {
+	m.mu.RLock()
+	cookie := m.browserCookies[d.ID]
+	m.mu.RUnlock()
+	if cookie != "" {
+		req.Header.Set("Cookie", cookie)
+	}
 	if d.AuthScheme == "" {
 		return nil
 	}
@@ -1249,6 +1259,7 @@ func (m *Manager) Remove(id string, deleteFile bool) error {
 	delete(m.downloads, id)
 	delete(m.limits, id)
 	delete(m.authSecrets, id)
+	delete(m.browserCookies, id)
 	for i, x := range m.order {
 		if x == id {
 			m.order = append(m.order[:i], m.order[i+1:]...)

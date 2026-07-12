@@ -16,9 +16,11 @@ func launchGrabby() error {
 		hostDir := filepath.Dir(exe)
 		candidates = append(candidates,
 			filepath.Join(hostDir, "Grabify.exe"),
+			filepath.Join(hostDir, "Grabify-dev.exe"),
 			filepath.Join(hostDir, "Grabby.exe"),
 			// Installed layout: <Grabby>\integration\grabby-native-host.exe
 			filepath.Join(filepath.Dir(hostDir), "Grabify.exe"),
+			filepath.Join(filepath.Dir(hostDir), "Grabify-dev.exe"),
 			filepath.Join(filepath.Dir(hostDir), "Grabby.exe"),
 		)
 	}

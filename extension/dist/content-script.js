@@ -64,4 +64,24 @@
     if (n instanceof HTMLVideoElement) observe(n);
     else if (n instanceof Element) scan(n);
   }))).observe(document.documentElement, { subtree: true, childList: true });
+  if (!window.__grabbyMagnet) {
+    window.__grabbyMagnet = true;
+    let captureTorrents = true;
+    chrome.storage?.local?.get?.(["captureTorrents"], (v) => {
+      captureTorrents = v.captureTorrents !== false;
+    });
+    chrome.storage?.onChanged?.addListener((changes, area) => {
+      if (area === "local" && changes.captureTorrents) captureTorrents = changes.captureTorrents.newValue !== false;
+    });
+    document.addEventListener("click", (event) => {
+      if (!captureTorrents || event.defaultPrevented || event.button !== 0) return;
+      const anchor = event.target?.closest?.('a[href^="magnet:"]');
+      if (!anchor) return;
+      const href = anchor.href || anchor.getAttribute("href") || "";
+      if (!/^magnet:\?/i.test(href)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      void chrome.runtime.sendMessage({ type: "capture.torrent", url: href, pageUrl: location.href });
+    }, true);
+  }
 })();

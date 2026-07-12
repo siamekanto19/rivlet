@@ -182,6 +182,7 @@ type AddRequest struct {
 	AuthUsername       string       `json:"authUsername,omitempty"`
 	AuthSecret         string       `json:"authSecret,omitempty"`
 	RememberCredential bool         `json:"rememberCredential,omitempty"`
+	CookieHeader       string       `json:"cookieHeader,omitempty"`
 }
 
 func NowISO() string { return time.Now().UTC().Format(time.RFC3339Nano) }

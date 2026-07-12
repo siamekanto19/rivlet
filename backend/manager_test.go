@@ -360,3 +360,36 @@ func TestSessionBasicAuthenticationIsNotPersisted(t *testing.T) {
 		t.Fatalf("credential leaked into SQLite: %s", stored)
 	}
 }
+
+func TestBrowserCookieHandoffIsSessionOnly(t *testing.T) {
+	payload := []byte("browser protected file")
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Cookie") != "session=browser-secret" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		w.Header().Set("Content-Length", strconv.Itoa(len(payload)))
+		if r.Method != http.MethodHead {
+			_, _ = w.Write(payload)
+		}
+	}))
+	defer srv.Close()
+	dir := t.TempDir()
+	m, err := NewManager(dir, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer m.Close()
+	d, err := m.Add(AddRequest{URL: srv.URL + "/protected", DestinationPath: dir, CookieHeader: "session=browser-secret"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	waitForState(t, m, d.ID, Completed)
+	var stored string
+	if err = m.db.QueryRow(`SELECT payload FROM downloads WHERE id=?`, d.ID).Scan(&stored); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(stored, "browser-secret") {
+		t.Fatalf("browser cookie leaked into SQLite: %s", stored)
+	}
+}

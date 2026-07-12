@@ -6,10 +6,12 @@
   var video = $("video-enabled");
   var sites = $("disabled-sites");
   var captureDownloads = $("capture-downloads");
+  var captureTorrents = $("capture-torrents");
   async function refresh() {
-    const saved = await chrome.storage.local.get(["videoEnabled", "disabledSites", "captureDownloads"]);
+    const saved = await chrome.storage.local.get(["videoEnabled", "disabledSites", "captureDownloads", "captureTorrents"]);
     video.checked = Boolean(saved.videoEnabled);
     captureDownloads.checked = saved.captureDownloads !== false;
+    captureTorrents.checked = saved.captureTorrents !== false;
     sites.value = (saved.disabledSites || []).join("\n");
   }
   async function test() {
@@ -36,7 +38,7 @@
     await chrome.storage.local.set({ videoEnabled: false });
   };
   $("save").onclick = async () => {
-    await chrome.storage.local.set({ videoEnabled: video.checked, captureDownloads: captureDownloads.checked, disabledSites: sites.value.split(/\r?\n/).map((x) => x.trim().toLowerCase()).filter(Boolean) });
+    await chrome.storage.local.set({ videoEnabled: video.checked, captureDownloads: captureDownloads.checked, captureTorrents: captureTorrents.checked, disabledSites: sites.value.split(/\r?\n/).map((x) => x.trim().toLowerCase()).filter(Boolean) });
   };
   void refresh();
   void test();

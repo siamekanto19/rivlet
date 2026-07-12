@@ -1,5 +1,6 @@
 import { NATIVE_HOST, envelope, type NativeResponse } from './protocol';
 import { currentCandidates, isMediaURL, isSiteDisabled, type MediaCandidate } from './media';
+import { isTakeoverURL, serializeCookies } from './download-capture';
 
 const MENU_ID='grabby-download-link';
 const candidates=new Map<number,Map<string,MediaCandidate>>();
@@ -7,9 +8,10 @@ const candidates=new Map<number,Map<string,MediaCandidate>>();
 chrome.runtime.onInstalled.addListener(()=>{
   chrome.contextMenus.removeAll(()=>chrome.contextMenus.create({id:MENU_ID,title:'Download with Grabify',contexts:['link']}));
   // Auto-capture browser downloads is on by default.
-  chrome.storage.local.get(['captureDownloads','videoEnabled'],v=>{
+  chrome.storage.local.get(['captureDownloads','captureTorrents','videoEnabled'],v=>{
     const defaults:Record<string,boolean>={};
     if(v.captureDownloads===undefined)defaults.captureDownloads=true;
+    if(v.captureTorrents===undefined)defaults.captureTorrents=true;
     if(v.videoEnabled===undefined)defaults.videoEnabled=true;
     if(Object.keys(defaults).length)chrome.storage.local.set(defaults);
   });
@@ -58,7 +60,7 @@ async function resolvedDownload(id:number,initial:chrome.downloads.DownloadItem)
 
 async function grabDownload(item:chrome.downloads.DownloadItem){
   if(item.byExtensionId===chrome.runtime.id)return;
-  const cfg=await chrome.storage.local.get(['captureDownloads','disabledSites']);
+  const cfg=await chrome.storage.local.get(['captureDownloads']);
   if(cfg.captureDownloads===false)return;
   // Stop Chrome at the earliest downloads API event. Otherwise a small file
   // can finish while the native host is still starting.
@@ -66,20 +68,18 @@ async function grabDownload(item:chrome.downloads.DownloadItem){
   try{await chrome.downloads.pause(item.id);pausedByGrabby=true;}catch{/* already complete or not pausable */}
   item=await resolvedDownload(item.id,item);
   const url=item.finalUrl||item.url;
-  if(!/^https?:\/\//i.test(url)){
+  if(!isTakeoverURL(url)){
     if(pausedByGrabby)await chrome.downloads.resume(item.id).catch(()=>{});
     return; // skip blob:, data:, file:
   }
   try{
-    const host=new URL(item.referrer||url).hostname;
-    if(host&&isSiteDisabled(host,cfg.disabledSites||[])){
-      if(pausedByGrabby)await chrome.downloads.resume(item.id).catch(()=>{});
-      return;
-    }
+    // Automatic browser takeover intentionally captures every HTTP(S) file.
   }catch{/* bad URL — fall through */}
+  const browserCookies=await chrome.cookies.getAll({url}).catch(()=>[]);
+  const cookieHeader=serializeCookies(browserCookies);
   const suggested=item.filename?(item.filename.split(/[\\/]/).pop()||''):'';
   try{
-    const response=await native('capture.download',{url,pageUrl:item.referrer,referrer:item.referrer,suggestedFilename:suggested,userAgent:navigator.userAgent});
+    const response=await native('capture.download',{url,pageUrl:item.referrer,referrer:item.referrer,suggestedFilename:suggested,userAgent:navigator.userAgent,cookieHeader});
     if(!response.ok)throw new Error(response.error||'Grabify rejected the download');
     try{await chrome.downloads.cancel(item.id);}catch{/* may already be finished */}
     try{await chrome.downloads.erase({id:item.id});}catch{/* ignore */}
@@ -138,6 +138,13 @@ chrome.runtime.onMessage.addListener((message,sender,sendResponse)=>{
     }
     if(message?.type==='capture.video'){
       const response=await native('capture.video',message.payload);if(!response.ok)throw new Error(response.error||'Video capture failed');sendResponse(response);return;
+    }
+    if(message?.type==='capture.torrent'){
+      const cfg=await chrome.storage.local.get(['captureTorrents']);
+      if(cfg.captureTorrents===false){sendResponse({ok:false,error:'Torrent capture is disabled'});return;}
+      const response=await native('capture.torrent',{url:message.url,pageUrl:message.pageUrl,referrer:message.pageUrl,suggestedFilename:'',userAgent:navigator.userAgent});
+      if(!response.ok)throw new Error(response.error||'Grabify rejected the torrent');
+      sendResponse(response);return;
     }
     if(message?.type==='site.disable'){
       const current:string[]=(await chrome.storage.local.get('disabledSites')).disabledSites||[];

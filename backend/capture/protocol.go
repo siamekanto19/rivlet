@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"strings"
 )
 
 const Version = 1
@@ -40,6 +41,7 @@ type LinkPayload struct {
 	SuggestedFilename string `json:"suggestedFilename,omitempty"`
 	Referrer          string `json:"referrer,omitempty"`
 	UserAgent         string `json:"userAgent,omitempty"`
+	CookieHeader      string `json:"cookieHeader,omitempty"`
 }
 
 type MediaCandidate struct {
@@ -101,11 +103,16 @@ func (e Envelope) Validate() error {
 		return errors.New("unsupported browser")
 	}
 	switch e.Action {
-	case "health", "capture.link", "capture.download", "capture.video":
+	case "health", "capture.link", "capture.download", "capture.video", "capture.torrent":
 	default:
 		return errors.New("unsupported action")
 	}
 	return nil
+}
+
+// IsMagnet reports whether raw looks like a BitTorrent magnet URI.
+func IsMagnet(raw string) bool {
+	return strings.HasPrefix(strings.ToLower(strings.TrimSpace(raw)), "magnet:?")
 }
 
 func ValidateHTTPURL(raw string) error {

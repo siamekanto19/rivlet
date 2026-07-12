@@ -71,7 +71,7 @@ func openBrowserExtensions(id string) error {
 		// to an already-running instance and opens the page in a new tab;
 		// stray unknown switches (e.g. "--new-tab", which isn't a real
 		// Chromium flag) cause the URL to be dropped on that forwarding path.
-		return exec.Command(path, extensionsURL(d)).Start()
+		return exec.Command(path, "--new-window", extensionsURL(d)).Start()
 	}
 	return errors.New("unknown browser")
 }

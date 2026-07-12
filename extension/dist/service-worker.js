@@ -27,14 +27,23 @@
     return [...values].filter((item) => now - item.seenAt < MEDIA_TTL_MS).map(({ url, kind }) => ({ url, kind }));
   }
 
+  // src/download-capture.ts
+  function isTakeoverURL(value) {
+    return /^https?:\/\//i.test(value);
+  }
+  function serializeCookies(cookies) {
+    return cookies.map((cookie) => `${cookie.name}=${cookie.value}`).join("; ");
+  }
+
   // src/service-worker.ts
   var MENU_ID = "grabby-download-link";
   var candidates = /* @__PURE__ */ new Map();
   chrome.runtime.onInstalled.addListener(() => {
     chrome.contextMenus.removeAll(() => chrome.contextMenus.create({ id: MENU_ID, title: "Download with Grabify", contexts: ["link"] }));
-    chrome.storage.local.get(["captureDownloads", "videoEnabled"], (v) => {
+    chrome.storage.local.get(["captureDownloads", "captureTorrents", "videoEnabled"], (v) => {
       const defaults = {};
       if (v.captureDownloads === void 0) defaults.captureDownloads = true;
+      if (v.captureTorrents === void 0) defaults.captureTorrents = true;
       if (v.videoEnabled === void 0) defaults.videoEnabled = true;
       if (Object.keys(defaults).length) chrome.storage.local.set(defaults);
     });
@@ -77,7 +86,7 @@
   }
   async function grabDownload(item) {
     if (item.byExtensionId === chrome.runtime.id) return;
-    const cfg = await chrome.storage.local.get(["captureDownloads", "disabledSites"]);
+    const cfg = await chrome.storage.local.get(["captureDownloads"]);
     if (cfg.captureDownloads === false) return;
     let pausedByGrabby = false;
     try {
@@ -87,23 +96,19 @@
     }
     item = await resolvedDownload(item.id, item);
     const url = item.finalUrl || item.url;
-    if (!/^https?:\/\//i.test(url)) {
+    if (!isTakeoverURL(url)) {
       if (pausedByGrabby) await chrome.downloads.resume(item.id).catch(() => {
       });
       return;
     }
     try {
-      const host = new URL(item.referrer || url).hostname;
-      if (host && isSiteDisabled(host, cfg.disabledSites || [])) {
-        if (pausedByGrabby) await chrome.downloads.resume(item.id).catch(() => {
-        });
-        return;
-      }
     } catch {
     }
+    const browserCookies = await chrome.cookies.getAll({ url }).catch(() => []);
+    const cookieHeader = serializeCookies(browserCookies);
     const suggested = item.filename ? item.filename.split(/[\\/]/).pop() || "" : "";
     try {
-      const response = await native("capture.download", { url, pageUrl: item.referrer, referrer: item.referrer, suggestedFilename: suggested, userAgent: navigator.userAgent });
+      const response = await native("capture.download", { url, pageUrl: item.referrer, referrer: item.referrer, suggestedFilename: suggested, userAgent: navigator.userAgent, cookieHeader });
       if (!response.ok) throw new Error(response.error || "Grabify rejected the download");
       try {
         await chrome.downloads.cancel(item.id);
@@ -173,6 +178,17 @@
       if (message?.type === "capture.video") {
         const response = await native("capture.video", message.payload);
         if (!response.ok) throw new Error(response.error || "Video capture failed");
+        sendResponse(response);
+        return;
+      }
+      if (message?.type === "capture.torrent") {
+        const cfg = await chrome.storage.local.get(["captureTorrents"]);
+        if (cfg.captureTorrents === false) {
+          sendResponse({ ok: false, error: "Torrent capture is disabled" });
+          return;
+        }
+        const response = await native("capture.torrent", { url: message.url, pageUrl: message.pageUrl, referrer: message.pageUrl, suggestedFilename: "", userAgent: navigator.userAgent });
+        if (!response.ok) throw new Error(response.error || "Grabify rejected the torrent");
         sendResponse(response);
         return;
       }

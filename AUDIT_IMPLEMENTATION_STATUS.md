@@ -13,6 +13,7 @@ This ledger maps every actionable recommendation in `GRABIFY_PRODUCT_AUDIT.md` t
 
 ## Add and browser flows
 
+- [x] Automatic browser download takeover with pause-before-handoff, redirect settling, authenticated cookie handoff, confirmed cancellation, and safe browser fallback
 - [x] Explicit single and batch URL entry with multiline validation
 - [ ] Metadata probe, duplicate detection, per-row filenames, drag/drop URLs and files
 - [x] Three-stage browser onboarding and browser choice

@@ -1,6 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1254 1254" width="1254" height="1254">
-  <rect width="1254" height="1254" fill="#FEFEFE"/>
-  <g fill="#01B06E">
+  <g fill="currentColor">
     <!-- left bar with pointed base -->
     <path d="M 644 239
              L 644 804

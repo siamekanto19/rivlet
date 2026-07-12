@@ -36,3 +36,24 @@ function showPrompt(video:HTMLVideoElement,candidates:Array<{url:string;kind?:st
 }
 
 scan();new MutationObserver(records=>records.forEach(r=>r.addedNodes.forEach(n=>{if(n instanceof HTMLVideoElement)observe(n);else if(n instanceof Element)scan(n);}))).observe(document.documentElement,{subtree:true,childList:true});
+
+// -- magnet / torrent capture ------------------------------------------------
+// Intercept clicks on magnet links and hand them to Grabify instead of the
+// browser's default "open with a torrent app?" prompt. Capture phase so we win
+// before site handlers. Guarded so double-injection can't bind two listeners.
+type MagnetFlag={__grabbyMagnet?:boolean};
+if(!(window as MagnetFlag).__grabbyMagnet){
+  (window as MagnetFlag).__grabbyMagnet=true;
+  let captureTorrents=true;
+  chrome.storage?.local?.get?.(['captureTorrents'],v=>{captureTorrents=v.captureTorrents!==false;});
+  chrome.storage?.onChanged?.addListener((changes,area)=>{if(area==='local'&&changes.captureTorrents)captureTorrents=changes.captureTorrents.newValue!==false;});
+  document.addEventListener('click',(event)=>{
+    if(!captureTorrents||event.defaultPrevented||event.button!==0)return;
+    const anchor=(event.target as Element|null)?.closest?.('a[href^="magnet:"]') as HTMLAnchorElement|null;
+    if(!anchor)return;
+    const href=anchor.href||anchor.getAttribute('href')||'';
+    if(!/^magnet:\?/i.test(href))return;
+    event.preventDefault();event.stopPropagation();
+    void chrome.runtime.sendMessage({type:'capture.torrent',url:href,pageUrl:location.href});
+  },true);
+}

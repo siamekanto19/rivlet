@@ -18,6 +18,7 @@ export namespace backend {
 	    authUsername?: string;
 	    authSecret?: string;
 	    rememberCredential?: boolean;
+	    cookieHeader?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new AddRequest(source);
@@ -42,6 +43,7 @@ export namespace backend {
 	        this.authUsername = source["authUsername"];
 	        this.authSecret = source["authSecret"];
 	        this.rememberCredential = source["rememberCredential"];
+	        this.cookieHeader = source["cookieHeader"];
 	    }
 	}
 	export class Category {

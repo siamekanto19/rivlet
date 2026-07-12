@@ -1,0 +1,3 @@
+import test from 'node:test';import assert from 'node:assert/strict';import{isTakeoverURL,serializeCookies}from'../.test/download-capture.mjs';
+test('automatic takeover accepts every HTTP and HTTPS download',()=>{for(const value of ['https://example.test/file','http://example.test/no-extension','HTTPS://EXAMPLE.TEST/A.ZIP'])assert.equal(isTakeoverURL(value),true);for(const value of ['blob:x','data:text/plain,x','file:///tmp/a'])assert.equal(isTakeoverURL(value),false)});
+test('browser cookies serialize for session-only native handoff',()=>{assert.equal(serializeCookies([{name:'session',value:'abc'},{name:'pref',value:'dark'}]),'session=abc; pref=dark');assert.equal(serializeCookies([]),'')});

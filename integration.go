@@ -77,5 +77,5 @@ func (a *App) BeginBrowserSetup(id string) error {
 	if err := openBrowserExtensions(id); err != nil {
 		return err
 	}
-	return openPath(extensionDir())
+	return nil
 }
