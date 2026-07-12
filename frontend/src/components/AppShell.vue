@@ -191,17 +191,22 @@ onBeforeUnmount(() => {document.removeEventListener('keydown', onKey);document.r
 
 <template>
   <div class="shell">
-    <TitleBar />
+    <!-- Merged top bar: command buttons on the left (where the title bar's empty
+         drag space used to be), a draggable region + window controls on the
+         right. Reclaims the whole row the toolbar previously owned. -->
+    <div class="topbar" v-if="ui.view !== 'settings'">
+      <Toolbar
+        @add="openAdd"
+        @delete="showRemove = true"
+      />
+      <TitleBar />
+    </div>
 
-    <!-- Settings takes over the content area as a full page -->
+    <!-- Settings takes over the whole area as a full page; it renders its own
+         title bar + window controls, so there is no separate top bar here. -->
     <SettingsPage v-if="ui.view === 'settings'" />
 
     <template v-else>
-    <Toolbar
-      @add="openAdd"
-      @settings="ui.openSettings()"
-      @delete="showRemove = true"
-    />
 
     <!-- filter / search sub-bar -->
     <div class="subbar">
@@ -289,6 +294,22 @@ onBeforeUnmount(() => {document.removeEventListener('keydown', onKey);document.r
   width: 100vw;
   overflow: hidden;
   background: transparent; /* Mica backdrop from body reads through */
+}
+/* Single top row: commands (Toolbar) sized to content on the left; the title
+   bar (draggable filler + window controls) fills the remaining width so the
+   window stays draggable and the caption buttons sit top-right. */
+.topbar {
+  display: flex;
+  align-items: stretch;
+  height: var(--topbar-h); /* taller than the buttons so they sit with padding */
+  flex: none;
+}
+.topbar > .toolbar {
+  flex: none;
+}
+.topbar > .titlebar {
+  flex: 1;
+  min-width: 0;
 }
 .subbar {
   display: flex;

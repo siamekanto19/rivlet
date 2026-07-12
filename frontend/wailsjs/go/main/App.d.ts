@@ -49,6 +49,8 @@ export function PauseAll():Promise<void>;
 
 export function PickFolder(arg1:string):Promise<string>;
 
+export function ProbeURL(arg1:string,arg2:string):Promise<backend.UrlProbe>;
+
 export function ProbeVideo(arg1:string,arg2:string,arg3:string):Promise<backend.VideoInfo>;
 
 export function Remove(arg1:string,arg2:boolean):Promise<void>;

@@ -1,4 +1,4 @@
-import type { AddDownloadRequest, Download, DownloadService, Settings, VideoInfo } from '../types';
+import type { AddDownloadRequest, Download, DownloadService, Settings, UrlProbe, VideoInfo } from '../types';
 import * as App from '../../wailsjs/go/main/App';
 import { EventsOn } from '../../wailsjs/runtime/runtime';
 import { MockDownloadService } from './MockDownloadService';
@@ -19,6 +19,8 @@ export class WailsDownloadService implements DownloadService {
   setQueueRunning = (queueId: string, running: boolean) => App.SetQueueRunning(queueId, running);
   setGlobalSpeedLimit = (bps: number | null) => App.SetGlobalSpeedLimit(bps as never);
   setDownloadSpeedLimit = (id: string, bps: number | null) => App.SetDownloadSpeedLimit(id, bps as never);
+  probeUrl = (url: string, referrer?: string) =>
+    (App as unknown as { ProbeURL: (u: string, r: string) => Promise<UrlProbe> }).ProbeURL(url, referrer ?? '');
   probeVideo = (url: string, browser?: 'chrome' | 'edge', browserProfile?: string) => App.ProbeVideo(url, browser ?? '', browserProfile ?? '') as Promise<VideoInfo>;
   selectVideoFormat = (id: string, formatId: string) => App.SelectVideoFormat(id, formatId);
   addTorrent = (value: string) => App.AddTorrent(value) as Promise<Download>;

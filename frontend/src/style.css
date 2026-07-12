@@ -38,6 +38,12 @@
   --border: rgba(0, 0, 0, 0.078);
   --border-strong: rgba(0, 0, 0, 0.14);
   --border-subtle: rgba(0, 0, 0, 0.05);
+
+  /* striped-table variant — deliberately more visible than the hairlines above */
+  --stripe-row: #e7ebf1;
+  --stripe-hover: #d7dde7;
+  --grid-line: rgba(0, 0, 0, 0.13);
+  --grid-line-head: rgba(0, 0, 0, 0.24);
   --border-control: rgba(0, 0, 0, 0.14);
   --border-control-bottom: rgba(0, 0, 0, 0.4); /* the darker bottom edge */
   --card-highlight: rgba(255, 255, 255, 0.85); /* top inner highlight */
@@ -92,6 +98,7 @@
 
   /* sizing — compact, but with room to breathe */
   --row-h: 40px;
+  --topbar-h: 64px; /* merged command/title bar + settings header (shared) */
   --toolbar-h: 58px;
   --status-h: 34px;
   --titlebar-h: 40px;
@@ -150,6 +157,13 @@
   --border: rgba(255, 255, 255, 0.075);
   --border-strong: rgba(255, 255, 255, 0.12);
   --border-subtle: rgba(255, 255, 255, 0.045);
+
+  /* striped-table variant — deliberately more visible than the hairlines above.
+     Surface is #2b2b2e, so the stripe is a clearly lighter step above it. */
+  --stripe-row: #36373c;
+  --stripe-hover: #414248;
+  --grid-line: rgba(255, 255, 255, 0.15);
+  --grid-line-head: rgba(255, 255, 255, 0.22);
   --border-control: rgba(255, 255, 255, 0.1);
   --border-control-bottom: rgba(255, 255, 255, 0.5);
   --card-highlight: rgba(255, 255, 255, 0.06);
@@ -456,6 +470,37 @@ button {
     animation-duration: 0.001ms !important;
     transition-duration: 0.001ms !important;
   }
+}
+
+/* -- Personalization prefs (set as root data-attrs by the UI store) --------- */
+/* Row density — how many rows fit on screen. "comfortable" is the default. */
+:root[data-density='compact'] {
+  --row-h: 32px;
+}
+:root[data-density='spacious'] {
+  --row-h: 52px;
+}
+/* Text size — scales the shared font-size tokens. "default" is unchanged. */
+:root[data-text-size='small'] {
+  --fs: 12.5px;
+  --fs-sm: 11px;
+  --fs-xs: 10px;
+}
+:root[data-text-size='large'] {
+  --fs: 15px;
+  --fs-sm: 13px;
+  --fs-xs: 11.5px;
+}
+/* Manual reduce-animations override (independent of the OS setting). */
+:root[data-motion='reduced'] * {
+  animation-duration: 0.001ms !important;
+  transition-duration: 0.001ms !important;
+}
+/* Monochrome file-type icons — drop the per-type tints, but keep the
+   error/canceled status colours so download state still reads at a glance.
+   (Global, not scoped: it must out-specify DownloadTable's scoped .ft-* rules.) */
+:root[data-file-icons='mono'] .tr:not(.s-error):not(.s-canceled) .kind-icon {
+  color: var(--text-faint);
 }
 
 @media (forced-colors: active) {

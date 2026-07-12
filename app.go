@@ -304,6 +304,9 @@ func (a *App) SetDownloadSpeedLimit(id string, bps *int64) error { return a.mana
 func (a *App) ProbeVideo(url, browser, profile string) (backend.VideoInfo, error) {
 	return backend.ProbeVideo(a.ctx, url, browser, profile)
 }
+func (a *App) ProbeURL(url, referrer string) (backend.UrlProbe, error) {
+	return a.manager.ProbeURL(a.ctx, url, referrer)
+}
 func (a *App) SelectVideoFormat(id, formatID string) error {
 	return a.manager.SelectVideoFormat(id, formatID)
 }

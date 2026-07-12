@@ -1,9 +1,11 @@
 <script lang="ts" setup>
 import { computed } from 'vue';
 import { useDownloadsStore } from '../stores/downloads';
+import { useUiStore } from '../stores/ui';
 import Icon from './Icon.vue';
 
 const store = useDownloadsStore();
+const ui = useUiStore();
 
 const active = computed(() => store.activeCategory);
 const categories = computed(() => store.settings?.categories ?? []);
@@ -25,6 +27,7 @@ function pick(cat: string) {
 
 <template>
   <aside class="sidebar">
+    <div class="sb-scroll">
     <div class="sb-section">
       <div class="sb-title">Status</div>
       <button class="sb-item" :class="{ active: active === 'all' }" @click="pick('all')">
@@ -63,6 +66,15 @@ function pick(cat: string) {
         <span class="cnt" v-if="counts[c.id]">{{ counts[c.id] }}</span>
       </button>
     </div>
+    </div>
+
+    <div class="sb-footer">
+      <button class="sb-item" @click="ui.openSettings()" title="Settings">
+        <span class="pill" />
+        <Icon name="settings" :size="16" />
+        <span class="lbl">Settings</span>
+      </button>
+    </div>
   </aside>
 </template>
 
@@ -70,11 +82,24 @@ function pick(cat: string) {
 .sidebar {
   width: 214px;
   flex: none;
+  display: flex;
+  flex-direction: column;
   background: transparent; /* NavigationView floats on the Mica backdrop */
-  overflow-y: auto;
-  overflow-x: hidden;
   padding: 4px 6px 12px;
   user-select: none;
+}
+.sb-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+/* Settings pinned to the bottom of the rail, away from the command toolbar. */
+.sb-footer {
+  flex: none;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+  margin-top: 4px;
 }
 .sb-section {
   margin-bottom: 14px;

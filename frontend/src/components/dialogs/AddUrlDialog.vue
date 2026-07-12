@@ -1,11 +1,12 @@
 <script lang="ts" setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useDownloadsStore } from '../../stores/downloads';
 import { detectKind } from '../../services/MockDownloadService';
 import type { AddDownloadRequest, DownloadKind } from '../../types';
 import Icon from '../Icon.vue';
 import Modal from './Modal.vue';
 import { pickFolder } from '../../services/folderPicker';
+import { formatBytes } from '../../utils/format';
 
 const store = useDownloadsStore();
 const props = defineProps<{ initialRequest?: AddDownloadRequest | null }>();
@@ -64,6 +65,39 @@ const kindLabel = computed(() => {
 });
 
 const valid = computed(() => urls.value.length >= 1);
+
+// -- auto-probe: fetch the filename + size from the URL ----------------------
+const probedSize = ref<number | null>(null);
+const probing = ref(false);
+// Never clobber a name the user typed (or one a capture request supplied).
+const filenameTouched = ref(!!props.initialRequest?.filename);
+let probeSeq = 0;
+let probeTimer: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleProbe() {
+  if (probeTimer) clearTimeout(probeTimer);
+  probeSeq++; // invalidate any in-flight probe
+  probedSize.value = null;
+  probing.value = false;
+  const single = urls.value[0];
+  if (multi.value || !single || kind.value !== 'http') return;
+  probeTimer = setTimeout(() => runProbe(single), 500);
+}
+async function runProbe(u: string) {
+  const seq = ++probeSeq;
+  probing.value = true;
+  try {
+    const info = await store.probeUrl(u);
+    if (seq !== probeSeq) return; // a newer URL superseded this probe
+    probedSize.value = info.sizeBytes ?? null;
+    if (!filenameTouched.value && info.filename) filename.value = info.filename;
+  } catch {
+    /* probe is best-effort — leave the fields as they are */
+  } finally {
+    if (seq === probeSeq) probing.value = false;
+  }
+}
+watch(url, scheduleProbe, { immediate: true });
 
 // Prefill from clipboard if it looks like a URL (mirrors IDM behavior).
 onMounted(async () => {
@@ -147,7 +181,11 @@ async function openTorrentFile() {
 
       <label class="row" v-if="!multi">
         <span class="lab">Save as</span>
-        <input v-model="filename" type="text" placeholder="(auto from URL)" spellcheck="false" />
+        <div class="field">
+          <input v-model="filename" @input="filenameTouched = true" type="text" placeholder="(auto from URL)" spellcheck="false" />
+          <div v-if="probing" class="meta-hint"><span class="dot-spin" /> Fetching file details…</div>
+          <div v-else-if="probedSize != null" class="meta-hint size"><Icon name="file" :size="13" /> Size: {{ formatBytes(probedSize) }}</div>
+        </div>
       </label>
 
       <label class="row" v-if="!multi && kind === 'http'">
@@ -248,6 +286,38 @@ async function openTorrentFile() {
   gap: 6px;
   font-size: var(--fs-sm);
   color: var(--accent-text);
+}
+.meta-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+.meta-hint.size {
+  color: var(--accent-text);
+  font-variant-numeric: tabular-nums;
+}
+.meta-hint :deep(svg) {
+  color: currentColor;
+}
+.dot-spin {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 2px solid var(--border-strong);
+  border-top-color: var(--accent);
+  animation: dot-spin 0.7s linear infinite;
+}
+@keyframes dot-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dot-spin {
+    animation: none;
+  }
 }
 .url-input {
   min-height: 32px;

@@ -45,6 +45,12 @@ export interface TorrentInfo {
   ratio: number;
 }
 
+export interface UrlProbe {
+  filename: string;
+  sizeBytes: number | null; // null when the server doesn't report a size
+  supportsResume: boolean;
+}
+
 export interface Download {
   id: string;
   url: string;
@@ -182,6 +188,9 @@ export interface DownloadService {
   // limits
   setGlobalSpeedLimit(bps: number | null): Promise<void>;
   setDownloadSpeedLimit(id: string, bps: number | null): Promise<void>;
+
+  // metadata probe for the Add dialog (filename + size)
+  probeUrl(url: string, referrer?: string): Promise<UrlProbe>;
 
   // video grabber
   probeVideo(url: string, browser?: 'chrome' | 'edge', browserProfile?: string): Promise<VideoInfo>;

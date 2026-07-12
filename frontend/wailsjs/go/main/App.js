@@ -94,6 +94,10 @@ export function PickFolder(arg1) {
   return window['go']['main']['App']['PickFolder'](arg1);
 }
 
+export function ProbeURL(arg1, arg2) {
+  return window['go']['main']['App']['ProbeURL'](arg1, arg2);
+}
+
 export function ProbeVideo(arg1, arg2, arg3) {
   return window['go']['main']['App']['ProbeVideo'](arg1, arg2, arg3);
 }

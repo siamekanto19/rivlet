@@ -5,6 +5,7 @@ import type {
   DownloadService,
   Settings,
   Unsubscribe,
+  UrlProbe,
   VideoInfo,
 } from '../types';
 import { DEFAULT_SETTINGS, makeFixtures } from './fixtures';
@@ -325,6 +326,20 @@ export class MockDownloadService implements DownloadService {
 
   async setDownloadSpeedLimit(id: string, bps: number | null): Promise<void> {
     this.perDownloadLimit.set(id, bps);
+  }
+
+  // -- metadata probe (filename + size for the Add dialog) ------------------
+
+  async probeUrl(url: string): Promise<UrlProbe> {
+    // Simulate a little network latency so the UI's loading state is exercised.
+    await new Promise((r) => setTimeout(r, 400));
+    const path = url.split(/[?#]/)[0];
+    let filename = decodeURIComponent(path.substring(path.lastIndexOf('/') + 1)) || 'download';
+    filename = filename.replace(/[<>:"/\\|?*]/g, '_');
+    // Only pretend to know a size when the URL looks like a concrete file.
+    const hasExt = /\.[a-z0-9]{2,4}$/i.test(filename);
+    const sizeBytes = hasExt ? (20 + (filename.length % 80)) * MB : null;
+    return { filename, sizeBytes, supportsResume: hasExt };
   }
 
   // -- video grabber --------------------------------------------------------

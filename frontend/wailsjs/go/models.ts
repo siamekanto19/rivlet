@@ -483,6 +483,22 @@ export namespace backend {
 	    }
 	}
 	
+	export class UrlProbe {
+	    filename: string;
+	    sizeBytes?: number;
+	    supportsResume: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new UrlProbe(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.filename = source["filename"];
+	        this.sizeBytes = source["sizeBytes"];
+	        this.supportsResume = source["supportsResume"];
+	    }
+	}
 	
 	
 	export class VideoToolsHealth {

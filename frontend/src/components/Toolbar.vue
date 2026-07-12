@@ -7,7 +7,6 @@ const store = useDownloadsStore();
 
 const emit = defineEmits<{
   (e: 'add'): void;
-  (e: 'settings'): void;
   (e: 'delete'): void;
 }>();
 
@@ -50,15 +49,6 @@ const canResume = computed(() => store.canResume);
         <span>Pause all</span>
       </button>
     </div>
-
-    <div class="spacer" />
-
-    <div class="group utility-group">
-      <button class="tbtn" @click="emit('settings')" title="Settings">
-        <Icon name="settings" :size="18" />
-        <span>Settings</span>
-      </button>
-    </div>
   </div>
 </template>
 
@@ -66,8 +56,8 @@ const canResume = computed(() => store.canResume);
 .toolbar {
   display: flex;
   align-items: center;
-  height: var(--toolbar-h);
-  padding: 0 14px;
+  height: 100%; /* fills the merged top bar (see AppShell .topbar) */
+  padding: 0 12px 0 14px;
   /* Transparent so it reads as the same Mica backdrop as the sub-bar and
      sidebar — no distinct command-bar tint. */
   background: transparent;

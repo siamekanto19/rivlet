@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue';
 import { useDownloadsStore, type SortKey } from '../stores/downloads';
+import { useUiStore } from '../stores/ui';
 import type { Download } from '../types';
 import { formatBytes, formatDate, formatEta, formatSpeed } from '../utils/format';
 import { fileIconOf, fileTypeOf } from '../utils/fileType';
@@ -9,6 +10,7 @@ import ProgressBar from './ProgressBar.vue';
 import StatusBadge from './StatusBadge.vue';
 
 const store = useDownloadsStore();
+const ui = useUiStore();
 
 const emit = defineEmits<{
   (e: 'contextmenu', payload: { id: string; x: number; y: number }): void;
@@ -184,7 +186,7 @@ function clearDrag() {
 </script>
 
 <template>
-  <div class="table" role="grid">
+  <div class="table" :class="{ striped: ui.tableStyle === 'striped' }" role="grid">
     <!-- header -->
     <div class="thead" :style="{ gridTemplateColumns: gridTemplate }">
       <div
@@ -525,6 +527,52 @@ function clearDrag() {
 }
 .empty-add {
   margin-top: 12px;
+}
+
+/* -- striped table variant (Personalization → Table style) -----------------
+   Zebra rows plus a full cell/header grid. Selection and hover fills are
+   re-declared with the `.striped` prefix so they still win over the zebra
+   background (equal specificity, later in source order). */
+.table.striped .thead {
+  border-bottom: 1px solid var(--grid-line-head);
+}
+.table.striped .th:not(:last-child) {
+  border-right: 1px solid var(--grid-line);
+}
+.table.striped .tr {
+  border-radius: 0;
+  border-bottom: 1px solid var(--grid-line);
+}
+.table.striped .tr::after {
+  display: none; /* replaced by the cell grid's bottom borders */
+}
+.table.striped .td:not(:last-child) {
+  border-right: 1px solid var(--grid-line);
+}
+/* Stretch cells to the full row height so the vertical grid lines are
+   continuous (they'd otherwise be short, content-height segments with gaps,
+   because the row centres its cells). Re-centre the content with flex. */
+.table.striped .tr {
+  align-items: stretch;
+}
+.table.striped .td {
+  display: flex;
+  align-items: center;
+}
+.table.striped .td.right {
+  justify-content: flex-end;
+}
+.table.striped .tr:nth-child(even) {
+  background: var(--stripe-row);
+}
+.table.striped .tr:hover {
+  background: var(--stripe-hover);
+}
+.table.striped .tr.selected {
+  background: var(--bg-selected);
+}
+.table.striped .tr.selected:hover {
+  background: var(--bg-selected-hover);
 }
 @media (max-width:900px){.thead,.tr{grid-template-columns:minmax(180px,3fr) 80px 105px minmax(110px,1fr) 80px!important}.thead>.th:nth-child(6),.thead>.th:nth-child(7),.tr>.td:nth-child(6),.tr>.td:nth-child(7){display:none}}
 @media (max-width:650px){.thead,.tr{grid-template-columns:minmax(170px,2fr) 100px minmax(100px,1fr)!important}.thead>.th:nth-child(2),.thead>.th:nth-child(5),.tr>.td:nth-child(2),.tr>.td:nth-child(5){display:none}}

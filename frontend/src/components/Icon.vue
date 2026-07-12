@@ -42,6 +42,7 @@ import {
   PaintBoardIcon,
   ArrowLeft02Icon,
   Notification03Icon,
+  DashboardSquare01Icon,
 } from '@hugeicons/core-free-icons';
 
 type IconData = readonly (readonly [string, Record<string, string | number>])[];
@@ -73,6 +74,7 @@ const map: Record<string, IconData> = {
   back: ArrowLeft02Icon,
   monitor: ComputerIcon,
   appearance: PaintBoardIcon,
+  personalization: DashboardSquare01Icon,
   notification: Notification03Icon,
   close: Cancel01Icon,
   cross: Cancel01Icon,

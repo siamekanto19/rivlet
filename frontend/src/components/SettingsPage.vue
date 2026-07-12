@@ -5,6 +5,7 @@ import { useUiStore } from '../stores/ui';
 import type { Category, Settings } from '../types';
 import { parseSpeedToBps } from '../utils/format';
 import Icon from './Icon.vue';
+import WindowControls from './WindowControls.vue';
 import { pickFolder } from '../services/folderPicker';
 import { integration } from '../services/integration';
 import { videoTools, type VideoToolsHealth } from '../services/videoTools';
@@ -12,16 +13,16 @@ import { videoTools, type VideoToolsHealth } from '../services/videoTools';
 const store = useDownloadsStore();
 const ui = useUiStore();
 
-type Tab = 'general' | 'appearance' | 'downloads' | 'connection' | 'browser' | 'filetypes' | 'categories' | 'schedule' | 'notifications' | 'advanced';
+type Tab = 'general' | 'appearance' | 'personalization' | 'downloads' | 'connection' | 'browser' | 'filetypes' | 'categories' | 'notifications' | 'advanced';
 const tabs: { id: Tab; label: string; icon: string }[] = [
   { id: 'general', label: 'General', icon: 'settings' },
   { id: 'appearance', label: 'Appearance', icon: 'appearance' },
+  { id: 'personalization', label: 'Personalization', icon: 'personalization' },
   { id: 'downloads', label: 'Downloads', icon: 'http' },
   { id: 'connection', label: 'Connection', icon: 'link' },
   { id: 'browser', label: 'Browser Integration', icon: 'monitor' },
   { id: 'filetypes', label: 'File Types', icon: 'file' },
   { id: 'categories', label: 'Categories', icon: 'folder' },
-  { id: 'schedule', label: 'Schedule', icon: 'scheduler' },
   { id: 'notifications', label: 'Notifications', icon: 'notification' },
   { id: 'advanced', label: 'Advanced', icon: 'settings' },
 ];
@@ -32,17 +33,23 @@ const themeOptions: { id: 'light' | 'dark' | 'system'; label: string; icon: stri
   { id: 'dark', label: 'Dark', icon: 'moon' },
   { id: 'system', label: 'System', icon: 'monitor' },
 ];
+const densityOptions: { id: 'compact' | 'comfortable' | 'spacious'; label: string }[] = [
+  { id: 'compact', label: 'Compact' },
+  { id: 'comfortable', label: 'Comfortable' },
+  { id: 'spacious', label: 'Spacious' },
+];
+const textSizeOptions: { id: 'small' | 'default' | 'large'; label: string }[] = [
+  { id: 'small', label: 'Small' },
+  { id: 'default', label: 'Default' },
+  { id: 'large', label: 'Large' },
+];
 
 // working copy of persisted settings (theme is applied live, separately)
 const src = store.settings as Settings;
 const original=JSON.parse(JSON.stringify(src)) as Settings;
 const draft = reactive<Settings>(JSON.parse(JSON.stringify(src)));
-const settingsSearch=ref('');
 const confirmRestore=ref(false);
-const searchItems=[{group:'general' as Tab,label:'Default download folder and clipboard monitoring'},{group:'appearance' as Tab,label:'Theme and appearance'},{group:'notifications' as Tab,label:'Notifications and completion dialog'},{group:'downloads' as Tab,label:'Concurrent downloads, speed and overwrite'},{group:'connection' as Tab,label:'Connections, retries, timeout and proxy'},{group:'filetypes' as Tab,label:'Browser capture file types and excluded sites'},{group:'browser' as Tab,label:'Browser integration, video quality, cookies and fragments'},{group:'categories' as Tab,label:'Download categories and folders'},{group:'schedule' as Tab,label:'Queues, schedules and completion actions'},{group:'advanced' as Tab,label:'Temporary files, host rules and diagnostics'}];
-const searchResults=computed(()=>{const q=settingsSearch.value.trim().toLowerCase();return q?searchItems.filter((x)=>x.label.toLowerCase().includes(q)):[]});
-function openSearchResult(group:Tab){active.value=group;settingsSearch.value=''}
-const pageKeys:Record<Tab,(keyof Settings)[]>={general:['downloadDir','clipboardMonitoring'],appearance:[],downloads:['maxConcurrent','globalSpeedLimitBps','shutdownOnComplete','overwritePolicy','autoResumeOnStartup','removeCompleted'],connection:['segmentCount','retryCount','retryDelaySeconds','requestTimeoutSeconds','userAgent','useSystemProxy','proxyUrl','hostRules'],browser:['showBrowserOnboardingOnStartup','videoDetectionEnabled','disabledVideoSites','preferredVideoQuality','preferredVideoContainer','concurrentFragments','cookieConsent','cookieBrowser','cookieProfile'],filetypes:['captureFileTypes','excludedSites'],categories:['categories'],schedule:['schedule','queues'],notifications:['notifyOnComplete','showCompletionDialog'],advanced:['temporaryDir']};
+const pageKeys:Record<Tab,(keyof Settings)[]>={general:['downloadDir','clipboardMonitoring'],appearance:[],personalization:[],downloads:['maxConcurrent','globalSpeedLimitBps','shutdownOnComplete','overwritePolicy','autoResumeOnStartup','removeCompleted'],connection:['segmentCount','retryCount','retryDelaySeconds','requestTimeoutSeconds','userAgent','useSystemProxy','proxyUrl','hostRules'],browser:['showBrowserOnboardingOnStartup','videoDetectionEnabled','disabledVideoSites','preferredVideoQuality','preferredVideoContainer','concurrentFragments','cookieConsent','cookieBrowser','cookieProfile'],filetypes:['captureFileTypes','excludedSites'],categories:['categories'],notifications:['notifyOnComplete','showCompletionDialog'],advanced:['temporaryDir','queues']};
 function syncDerivedFields(){captureTypesText.value=(draft.captureFileTypes??[]).join(', ');excludedSitesText.value=(draft.excludedSites??[]).join('\n');disabledVideoSitesText.value=(draft.disabledVideoSites??[]).join('\n');limitOn.value=draft.globalSpeedLimitBps!=null;limitKb.value=draft.globalSpeedLimitBps?Math.round(draft.globalSpeedLimitBps/1024):500}
 function resetPage(){for(const key of pageKeys[active.value]){(draft as unknown as Record<string,unknown>)[key]=JSON.parse(JSON.stringify((original as unknown as Record<string,unknown>)[key]))};syncDerivedFields()}
 async function restoreDefaults(){const defaults=await store.resetSettings();Object.assign(draft,JSON.parse(JSON.stringify(defaults)));syncDerivedFields();confirmRestore.value=false}
@@ -116,7 +123,8 @@ async function chooseCategoryFolder(category: Category) {
         <Icon name="back" :size="18" />
       </button>
       <h1>Settings</h1>
-      <div class="settings-search"><Icon name="search" :size="14"/><input v-model="settingsSearch" type="search" placeholder="Find a setting" aria-label="Search settings"/></div>
+      <div class="sp-head-spacer" />
+      <WindowControls />
     </div>
 
     <div class="sp-body">
@@ -137,8 +145,7 @@ async function chooseCategoryFolder(category: Category) {
 
       <!-- content card: white surface, mirrors the downloads table card -->
       <div class="content-card">
-        <div v-if="settingsSearch" class="settings-results"><div class="section-intro"><h2>Search results</h2><p>{{searchResults.length}} matching settings area{{searchResults.length===1?'':'s'}}</p></div><button v-for="item in searchResults" :key="item.label" @click="openSearchResult(item.group)"><Icon :name="tabs.find((x)=>x.id===item.group)?.icon||'settings'" :size="16"/><span><b>{{item.label}}</b><small>{{tabs.find((x)=>x.id===item.group)?.label}}</small></span><Icon name="chevron-right" :size="14"/></button><div v-if="!searchResults.length" class="no-settings"><Icon name="search" :size="22"/><p>No settings match “{{settingsSearch}}”</p><span>Try a broader term such as proxy, video, folder, queue, or notification.</span></div></div>
-        <div v-show="!settingsSearch" class="panel">
+        <div class="panel">
         <!-- GENERAL -->
         <section v-show="active === 'general'" class="pane">
           <div class="frow">
@@ -178,6 +185,100 @@ async function chooseCategoryFolder(category: Category) {
                 <span>{{ o.label }}</span>
               </button>
             </div>
+          </div>
+        </section>
+
+        <!-- PERSONALIZATION -->
+        <section v-show="active === 'personalization'" class="pane">
+          <div class="section-intro"><h2>Personalization</h2><p>Tune how Grabify looks and feels. These preferences apply instantly and are remembered on this PC.</p></div>
+
+          <!-- table style -->
+          <div class="frow">
+            <label>Table style</label>
+            <span class="hint">Striped adds alternating row shading and grid lines between cells.</span>
+            <div class="seg" role="radiogroup" aria-label="Table style">
+              <button
+                class="seg-btn"
+                :class="{ on: ui.tableStyle === 'normal' }"
+                role="radio"
+                :aria-checked="ui.tableStyle === 'normal'"
+                @click="ui.setTableStyle('normal')"
+              >
+                <Icon name="http" :size="16" />
+                <span>Normal</span>
+              </button>
+              <button
+                class="seg-btn"
+                :class="{ on: ui.tableStyle === 'striped' }"
+                role="radio"
+                :aria-checked="ui.tableStyle === 'striped'"
+                @click="ui.setTableStyle('striped')"
+              >
+                <Icon name="personalization" :size="16" />
+                <span>Striped</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- row density -->
+          <div class="frow">
+            <label>Row density</label>
+            <span class="hint">How tightly downloads are packed in the list — Compact fits more on screen.</span>
+            <div class="seg" role="radiogroup" aria-label="Row density">
+              <button
+                v-for="o in densityOptions"
+                :key="o.id"
+                class="seg-btn"
+                :class="{ on: ui.density === o.id }"
+                role="radio"
+                :aria-checked="ui.density === o.id"
+                @click="ui.setDensity(o.id)"
+              >
+                <span>{{ o.label }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- text size -->
+          <div class="frow">
+            <label>Text size</label>
+            <span class="hint">Adjust the app's text size for easier reading.</span>
+            <div class="seg" role="radiogroup" aria-label="Text size">
+              <button
+                v-for="o in textSizeOptions"
+                :key="o.id"
+                class="seg-btn"
+                :class="{ on: ui.textSize === o.id }"
+                role="radio"
+                :aria-checked="ui.textSize === o.id"
+                @click="ui.setTextSize(o.id)"
+              >
+                <span>{{ o.label }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- toggles -->
+          <div class="frow">
+            <label class="chk">
+              <input type="checkbox" :checked="ui.colorfulIcons" @change="ui.setColorfulIcons(($event.target as HTMLInputElement).checked)" />
+              Colorful file-type icons
+            </label>
+            <span class="hint">Tint icons by file type. Turn off for a calm, monochrome list.</span>
+          </div>
+          <div class="frow">
+            <label class="chk">
+              <input type="checkbox" :checked="ui.followSystemAccent" @change="ui.setFollowSystemAccent(($event.target as HTMLInputElement).checked)" />
+              Follow Windows accent color
+            </label>
+            <span class="hint">Match your Windows accent. Turn off to use Grabify's built-in accent.</span>
+          </div>
+          <div class="frow">
+            <label class="chk">
+              <input type="checkbox" :checked="ui.reduceMotion" @change="ui.setReduceMotion(($event.target as HTMLInputElement).checked)" />
+              Reduce animations
+            </label>
+            <span class="hint">Minimize motion and transitions throughout the app.</span>
           </div>
         </section>
 
@@ -294,37 +395,6 @@ async function chooseCategoryFolder(category: Category) {
         </section>
 
         <!-- SCHEDULE -->
-        <section v-show="active === 'schedule'" class="pane">
-          <div class="section-intro"><h2>Download queues</h2><p>Prioritize groups and give each its own concurrency, bandwidth, and schedule.</p></div>
-          <div class="cat-add"><input v-model="newQueueName" placeholder="New queue name" @keyup.enter="addQueue" /><button class="btn" @click="addQueue">Add queue</button></div>
-          <div class="cat-list">
-            <div v-for="q in draft.queues" :key="q.id" class="cat queue-card">
-              <div class="cat-head"><Icon name="scheduler" :size="14"/><input class="cat-name" v-model="q.name"/><button v-if="q.id!=='default'" class="rm" @click="removeQueue(q.id)" aria-label="Remove queue"><Icon name="close" :size="14"/></button></div>
-              <label class="chk"><input type="checkbox" v-model="q.running"/> Queue is running</label>
-              <div class="queue-grid"><label>Priority<input type="number" min="-10" max="10" v-model.number="q.priority"/></label><label>Concurrent<input type="number" min="1" max="16" v-model.number="q.maxConcurrent"/></label><label>Speed KB/s<input type="number" min="0" :value="q.speedLimitBps ? Math.round(q.speedLimitBps/1024) : 0" @input="q.speedLimitBps=Number(($event.target as HTMLInputElement).value)*1024||null"/></label><label>After completion<select v-model="q.completionAction"><option value="">Do nothing</option><option value="shutdown">Shut down</option><option value="sleep">Sleep</option><option value="hibernate">Hibernate</option></select></label></div>
-              <label class="chk"><input type="checkbox" v-model="q.schedule!.enabled"/> Use queue schedule</label>
-              <div v-if="q.schedule?.enabled" class="queue-grid"><label>Start<input type="time" v-model="q.schedule.startHHmm"/></label><label>Stop<input type="time" v-model="q.schedule.stopHHmm"/></label></div>
-            </div>
-          </div>
-          <template v-if="draft.schedule">
-            <div class="frow">
-              <label class="chk">
-                <input type="checkbox" v-model="draft.schedule.enabled" />
-                Enable download scheduler
-              </label>
-              <span class="hint">Automatically start and stop the queue within a time window.</span>
-            </div>
-            <div class="frow inline" :class="{ dim: !draft.schedule.enabled }">
-              <label>Start queue at</label>
-              <input class="narrow" type="time" v-model="draft.schedule.startHHmm" :disabled="!draft.schedule.enabled" />
-            </div>
-            <div class="frow inline" :class="{ dim: !draft.schedule.enabled }">
-              <label>Stop queue at</label>
-              <input class="narrow" type="time" v-model="draft.schedule.stopHHmm" :disabled="!draft.schedule.enabled" />
-            </div>
-          </template>
-        </section>
-
         <!-- NOTIFICATIONS -->
         <section v-show="active === 'notifications'" class="pane">
           <div class="frow">
@@ -338,6 +408,17 @@ async function chooseCategoryFolder(category: Category) {
 
         <!-- ADVANCED -->
         <section v-show="active === 'advanced'" class="pane">
+          <div class="section-intro"><h2>Download queues</h2><p>Prioritize groups and give each its own concurrency, bandwidth, schedule, and completion action.</p></div>
+          <div class="cat-add"><input v-model="newQueueName" placeholder="New queue name" @keyup.enter="addQueue" /><button class="btn" @click="addQueue">Add queue</button></div>
+          <div class="cat-list">
+            <div v-for="q in draft.queues" :key="q.id" class="cat queue-card">
+              <div class="cat-head"><Icon name="scheduler" :size="14"/><input class="cat-name" v-model="q.name"/><button v-if="q.id!=='default'" class="rm" @click="removeQueue(q.id)" aria-label="Remove queue"><Icon name="close" :size="14"/></button></div>
+              <label class="chk"><input type="checkbox" v-model="q.running"/> Queue is running</label>
+              <div class="queue-grid"><label>Priority<input type="number" min="-10" max="10" v-model.number="q.priority"/></label><label>Concurrent<input type="number" min="1" max="16" v-model.number="q.maxConcurrent"/></label><label>Speed KB/s<input type="number" min="0" :value="q.speedLimitBps ? Math.round(q.speedLimitBps/1024) : 0" @input="q.speedLimitBps=Number(($event.target as HTMLInputElement).value)*1024||null"/></label><label>After completion<select v-model="q.completionAction"><option value="">Do nothing</option><option value="shutdown">Shut down</option><option value="sleep">Sleep</option><option value="hibernate">Hibernate</option></select></label></div>
+              <label class="chk"><input type="checkbox" v-model="q.schedule!.enabled"/> Use queue schedule</label>
+              <div v-if="q.schedule?.enabled" class="queue-grid"><label>Start<input type="time" v-model="q.schedule.startHHmm"/></label><label>Stop<input type="time" v-model="q.schedule.stopHHmm"/></label></div>
+            </div>
+          </div>
           <div class="section-intro"><h2>Storage and safety</h2><p>Advanced options for incomplete downloads and automated actions.</p></div>
           <div class="frow"><label>Temporary files folder</label><div class="folder-control"><input :value="draft.temporaryDir" type="text" readonly /><button class="browse" type="button" @click="async () => draft.temporaryDir = await pickFolder(draft.temporaryDir)"><Icon name="folder" :size="15" /> Browse</button></div></div>
           <div class="notice">Site passwords, arbitrary completion programs, forced process termination, and dial-up controls are intentionally not stored or executed until a secure credential and permission model is available.</div>
@@ -380,13 +461,16 @@ async function chooseCategoryFolder(category: Category) {
     transform: translateY(0);
   }
 }
+/* Doubles as the window title bar: flush-right for the caption buttons, and
+   the empty areas act as the window drag region. */
 .sp-head {
   display: flex;
   align-items: center;
   gap: 10px;
-  height: 50px;
-  padding: 0 16px 10px;
+  height: var(--topbar-h);
+  padding: 0 0 0 16px;
   flex: none;
+  --wails-draggable: drag;
 }
 .back {
   display: flex;
@@ -398,6 +482,7 @@ async function chooseCategoryFolder(category: Category) {
   border-radius: var(--radius);
   background: transparent;
   color: var(--text-muted);
+  --wails-draggable: no-drag;
   transition: background-color var(--dur-fast) var(--ease-standard),
     color var(--dur-fast) var(--ease-standard);
 }
@@ -412,7 +497,10 @@ async function chooseCategoryFolder(category: Category) {
   font-weight: 600;
   letter-spacing: -0.01em;
 }
-.settings-search{margin-left:auto;width:260px;height:32px;display:flex;align-items:center;gap:7px;padding:0 9px;border:1px solid var(--border-control);border-bottom-color:var(--border-control-bottom);border-radius:var(--radius-sm);background:var(--bg-control);color:var(--text-faint)}.settings-search:focus-within{border-bottom-color:var(--accent);box-shadow:inset 0 -1px var(--accent)}.settings-search input{flex:1;min-width:0;height:28px;border:0;background:transparent;box-shadow:none}.settings-results{flex:1;padding:22px 26px;overflow:auto}.settings-results>button{display:flex;align-items:center;gap:12px;width:100%;max-width:620px;padding:12px;border:0;border-bottom:1px solid var(--border);background:transparent;color:var(--text);text-align:left}.settings-results>button:hover{background:var(--bg-hover)}.settings-results>button>span{display:flex;flex:1;flex-direction:column;gap:3px}.settings-results small{color:var(--text-faint)}.no-settings{display:flex;flex-direction:column;align-items:center;gap:5px;padding:60px 20px;color:var(--text-faint);text-align:center}.no-settings p{margin:8px 0 0;color:var(--text);font-weight:600}.no-settings span{font-size:var(--fs-sm)}
+.sp-head-spacer {
+  flex: 1; /* pushes the window controls to the right edge */
+}
+.settings-search{--wails-draggable:no-drag;margin-left:auto;width:260px;height:32px;display:flex;align-items:center;gap:7px;padding:0 9px;border:1px solid var(--border-control);border-bottom-color:var(--border-control-bottom);border-radius:var(--radius-sm);background:var(--bg-control);color:var(--text-faint)}.settings-search:focus-within{border-bottom-color:var(--accent);box-shadow:inset 0 -1px var(--accent)}.settings-search input{flex:1;min-width:0;height:28px;border:0;background:transparent;box-shadow:none}.settings-results{flex:1;padding:22px 26px;overflow:auto}.settings-results>button{display:flex;align-items:center;gap:12px;width:100%;max-width:620px;padding:12px;border:0;border-bottom:1px solid var(--border);background:transparent;color:var(--text);text-align:left}.settings-results>button:hover{background:var(--bg-hover)}.settings-results>button>span{display:flex;flex:1;flex-direction:column;gap:3px}.settings-results small{color:var(--text-faint)}.no-settings{display:flex;flex-direction:column;align-items:center;gap:5px;padding:60px 20px;color:var(--text-faint);text-align:center}.no-settings p{margin:8px 0 0;color:var(--text);font-weight:600}.no-settings span{font-size:var(--fs-sm)}
 .sp-body {
   flex: 1;
   min-height: 0;

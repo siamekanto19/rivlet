@@ -48,6 +48,15 @@ type TorrentInfo struct {
 	Seeders int     `json:"seeders"`
 	Ratio   float64 `json:"ratio"`
 }
+
+// UrlProbe is the lightweight metadata fetched for the Add dialog: a suggested
+// filename (from Content-Disposition or the URL) and the file size when the
+// server reports it. SizeBytes is nil when the size is unknown.
+type UrlProbe struct {
+	Filename       string `json:"filename"`
+	SizeBytes      *int64 `json:"sizeBytes"`
+	SupportsResume bool   `json:"supportsResume"`
+}
 type Download struct {
 	ID                string            `json:"id"`
 	URL               string            `json:"url"`

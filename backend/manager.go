@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
+	"mime"
 	"net/http"
 	"net/http/httptrace"
 	"net/url"
@@ -67,7 +68,24 @@ func NewManager(stateDir string, emit EventSink) (*Manager, error) {
 	transport.MaxIdleConns = 128
 	transport.MaxIdleConnsPerHost = 32
 	transport.MaxConnsPerHost = 32
-	transport.ForceAttemptHTTP2 = true
+	// A multi-connection accelerator needs N independent TCP connections, each
+	// with its own congestion/flow-control window. HTTP/2 would multiplex every
+	// range request onto a SINGLE connection (one window), collapsing all that
+	// parallelism back to roughly single-connection speed. Force HTTP/1.1 so
+	// each segment gets a real, separate connection — this is where the speed
+	// advantage over a plain browser download comes from.
+	transport.ForceAttemptHTTP2 = false
+	transport.TLSNextProto = map[string]func(string, *tls.Conn) http.RoundTripper{}
+	// Cloning DefaultTransport preserves its ALPN setup, which still advertises
+	// "h2". Against an HTTP/2 server that makes it reply in HTTP/2 while we parse
+	// the stream as HTTP/1.1 — a "malformed HTTP response" that fails the
+	// download instantly. Pin ALPN to http/1.1 so only HTTP/1.1 is negotiated.
+	if transport.TLSClientConfig == nil {
+		transport.TLSClientConfig = &tls.Config{}
+	} else {
+		transport.TLSClientConfig = transport.TLSClientConfig.Clone()
+	}
+	transport.TLSClientConfig.NextProtos = []string{"http/1.1"}
 	m := &Manager{downloads: map[string]*Download{}, limits: map[string]*int64{}, cancels: map[string]context.CancelFunc{}, authSecrets: map[string]string{}, statePath: filepath.Join(stateDir, "state.json"), client: &http.Client{Transport: transport}, emit: emit, wake: make(chan struct{}, 1), closed: make(chan struct{})}
 	m.settings = defaultSettings(dl)
 	m.normalizeSettings()
@@ -229,6 +247,92 @@ func safeName(s string) string {
 		return r
 	}, s)
 }
+
+// ProbeURL fetches lightweight metadata for the Add dialog: a suggested
+// filename (Content-Disposition, else the URL path) and, when the server
+// reports it, the file size. Best-effort — a failed probe still returns the
+// filename derived from the URL, and SizeBytes stays nil when size is unknown.
+func (m *Manager) ProbeURL(ctx context.Context, rawURL, referrer string) (UrlProbe, error) {
+	out := UrlProbe{Filename: filenameFromURL(rawURL)}
+	m.mu.RLock()
+	ua := m.settings.UserAgent
+	m.mu.RUnlock()
+	do := func(method string, ranged bool) (*http.Response, error) {
+		req, err := http.NewRequestWithContext(ctx, method, rawURL, nil)
+		if err != nil {
+			return nil, err
+		}
+		if ua != "" {
+			req.Header.Set("User-Agent", ua)
+		}
+		if referrer != "" {
+			req.Header.Set("Referer", referrer)
+		}
+		if ranged {
+			req.Header.Set("Range", "bytes=0-0")
+		}
+		return m.doHTTP(req)
+	}
+	resp, err := do(http.MethodHead, false)
+	if err != nil || resp == nil || resp.StatusCode < 200 || resp.StatusCode >= 400 {
+		if resp != nil {
+			resp.Body.Close()
+		}
+		// Some servers reject HEAD — fall back to a 1-byte ranged GET for headers.
+		g, gerr := do(http.MethodGet, true)
+		if gerr != nil {
+			return out, gerr
+		}
+		resp = g
+	}
+	defer func() { _, _ = io.Copy(io.Discard, resp.Body); resp.Body.Close() }()
+
+	if name := filenameFromDisposition(resp.Header.Get("Content-Disposition")); name != "" {
+		out.Filename = name
+	}
+	if resp.StatusCode == http.StatusPartialContent {
+		if total, ok := validContentRange(resp.Header.Get("Content-Range"), 0, 0); ok && total > 0 {
+			out.SizeBytes = &total
+		}
+	} else if resp.ContentLength > 0 {
+		size := resp.ContentLength
+		out.SizeBytes = &size
+	}
+	if strings.Contains(strings.ToLower(resp.Header.Get("Accept-Ranges")), "bytes") {
+		out.SupportsResume = true
+	}
+	return out, nil
+}
+
+func filenameFromURL(rawURL string) string {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return "download"
+	}
+	name := safeName(filepath.Base(strings.TrimSuffix(u.Path, "/")))
+	if name == "" || name == "." || name == "_" {
+		return "download"
+	}
+	return name
+}
+
+func filenameFromDisposition(cd string) string {
+	if cd == "" {
+		return ""
+	}
+	_, params, err := mime.ParseMediaType(cd)
+	if err != nil {
+		return ""
+	}
+	if v := strings.TrimSpace(params["filename*"]); v != "" {
+		return safeName(v)
+	}
+	if v := strings.TrimSpace(params["filename"]); v != "" {
+		return safeName(v)
+	}
+	return ""
+}
+
 func (m *Manager) category(name string) string {
 	ext := strings.TrimPrefix(strings.ToLower(filepath.Ext(name)), ".")
 	for _, c := range m.settings.Categories {
@@ -1239,7 +1343,24 @@ func (m *Manager) configureHTTPClient() error {
 	transport.MaxIdleConns = 128
 	transport.MaxIdleConnsPerHost = 32
 	transport.MaxConnsPerHost = 32
-	transport.ForceAttemptHTTP2 = true
+	// A multi-connection accelerator needs N independent TCP connections, each
+	// with its own congestion/flow-control window. HTTP/2 would multiplex every
+	// range request onto a SINGLE connection (one window), collapsing all that
+	// parallelism back to roughly single-connection speed. Force HTTP/1.1 so
+	// each segment gets a real, separate connection — this is where the speed
+	// advantage over a plain browser download comes from.
+	transport.ForceAttemptHTTP2 = false
+	transport.TLSNextProto = map[string]func(string, *tls.Conn) http.RoundTripper{}
+	// Cloning DefaultTransport preserves its ALPN setup, which still advertises
+	// "h2". Against an HTTP/2 server that makes it reply in HTTP/2 while we parse
+	// the stream as HTTP/1.1 — a "malformed HTTP response" that fails the
+	// download instantly. Pin ALPN to http/1.1 so only HTTP/1.1 is negotiated.
+	if transport.TLSClientConfig == nil {
+		transport.TLSClientConfig = &tls.Config{}
+	} else {
+		transport.TLSClientConfig = transport.TLSClientConfig.Clone()
+	}
+	transport.TLSClientConfig.NextProtos = []string{"http/1.1"}
 	if proxyRaw != "" {
 		proxyURL, err := url.Parse(proxyRaw)
 		if err != nil || proxyURL.Scheme == "" || proxyURL.Host == "" || proxyURL.User != nil {
@@ -1251,7 +1372,12 @@ func (m *Manager) configureHTTPClient() error {
 	} else {
 		transport.Proxy = nil
 	}
-	client := &http.Client{Transport: transport, Timeout: time.Duration(max(timeout, 5)) * time.Second}
+	// Header timeout only — NOT http.Client.Timeout, which caps the whole
+	// exchange (including body read) and would abort a large, healthy download
+	// mid-transfer. ResponseHeaderTimeout catches a dead/stalled server while
+	// letting a long transfer run to completion.
+	transport.ResponseHeaderTimeout = time.Duration(max(timeout, 5)) * time.Second
+	client := &http.Client{Transport: transport}
 	m.clientMu.Lock()
 	old := m.client
 	m.client = client

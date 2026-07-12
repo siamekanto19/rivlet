@@ -1,4 +1,4 @@
-# Grabby — Product Context
+# Grabify — Product Context
 
 > Read this first. It's the single orientation document for the project: what
 > it is, how it's built, the contract that anchors everything, and what is /
@@ -8,23 +8,32 @@
 
 ## 1. What this is
 
-A desktop **download manager**, built as a modern alternative to Internet
-Download Manager (IDM). Native desktop app via **Wails** (Go backend + web
-frontend). It manages HTTP downloads, video grabs, and torrents: queueing,
-pausing/resuming, segmented multi-connection downloads, categories, speed
-limits, scheduling, and browser/clipboard capture.
+**Grabify** is a Windows **download manager and download accelerator**, built as
+a modern, premium alternative to Internet Download Manager (IDM). It's a native
+desktop app via **Wails** (Go backend + Vue frontend). It manages HTTP
+downloads, browser-captured downloads, videos, and torrents: queueing,
+pausing/resuming, segmented multi-connection acceleration, categories, speed
+limits, per-queue scheduling, and browser/clipboard capture.
+
+> **Naming history:** the project started as `idm-next`, was briefly "Grabby",
+> and is now **Grabify**. Some internal identifiers still read `grabby`/`idm-next`
+> (localStorage keys like `grabby-theme`, the Go module `idm-next`, a few asset
+> names) — that's expected; the user-facing product is Grabify.
+
+**Positioning (business):** sold as a one-time-purchase (perpetual license)
+accelerator — *not* marketed as a YouTube/video downloader — to keep the widest
+legal sales/marketplace reach. See the monetization plan discussed separately;
+the landing page lives in `scratchpad/grabify-landing.html`.
 
 **Design intent:** dense, information-first, and utilitarian, but *premium* —
 built to feel like a native **Windows 11 (Fluent Design)** application, not a
 generic template. The data table is the centerpiece; compact but not cramped.
-Fluent foundation lives in `frontend/src/style.css`: layered neutral materials
-(Mica → Layer → Card), the Windows system accent, Segoe UI Variable type ramp,
-Fluent elevation + motion tokens, and native control detailing (focus accent
-underline, NavigationView selection pill, rounded progress). Motion is subtle
-and purposeful (as Windows itself is) — hover/press transitions, flyout and
-dialog entrances — never gratuitous. Light theme by default; the dark theme is a
-native warm dark-gray **Mica** (deliberately *not* true-black), with the bright
-accent + dark-on-accent buttons Windows 11 uses.
+The Fluent foundation lives in `frontend/src/style.css`: layered neutral
+materials (Mica base → white surface → subtle inset), the **Windows system
+accent** (read live from the registry and adapted per theme), a Segoe UI
+Variable type ramp, Fluent elevation + motion tokens, and native control
+detailing. Motion is subtle and purposeful. Light theme by default; the dark
+theme is a native warm dark-gray **Mica** (deliberately *not* true-black).
 
 ---
 
@@ -32,75 +41,92 @@ accent + dark-on-accent buttons Windows 11 uses.
 
 | Area | Status |
 |------|--------|
-| **Frontend (Vue 3 UI)** | ✅ Complete, running entirely on **mock data** |
-| **Contract / service interface** | ✅ Defined and frozen (`frontend/src/types/index.ts`) |
-| **Backend (Go engine, real downloads, API)** | ⏳ **Not started** — deliberately deferred |
-| **Wails shell** | ✅ Exists (frameless window, custom title bar wired) |
+| **Frontend (Vue 3 UI)** | ✅ Complete |
+| **Contract / service interface** | ✅ Defined (`frontend/src/types/index.ts`) |
+| **Backend (Go engine, real downloads, persistence)** | ✅ Built and working |
+| **Wails shell + packaging** | ✅ Builds to `Grabify.exe` + NSIS installer |
+| **Browser integration** | ✅ Extension + native-messaging host (manual/guided install) |
+| **Code signing / store publishing / marketing** | ❌ Not done (pre-launch) |
 
-The frontend was built first, on purpose: it **defines and implements the full
-contract** the backend must later fulfill. Every command the UI can issue and
-every field/event it renders already exists in `DownloadService`. When the
-backend starts, it implements that same interface — nothing to renegotiate.
+The app is a working end-to-end product: `wails build` produces
+`build/bin/Grabify.exe`, `build/bin/Grabify-amd64-installer.exe`, and the
+native-messaging host `build/bin/grabify-native-host.exe`. The frontend can
+still run standalone in a browser on the **mock service** for fast UI iteration.
 
-**Rule when working here:** do not build backend engine/networking logic yet
-unless explicitly asked. The immediate surface is the frontend + the contract.
+### Known gaps / not fully wired (as of the last audit)
+- **Settings that are stored but not enforced:** `clipboardMonitoring`,
+  `preferredVideoQuality`, `preferredVideoContainer` (surfaced in UI, not yet
+  consumed by the engine).
+- **Segmentation** is over-segmented **work-stealing**, not true IDM-style
+  "split the largest unfinished range on idle"; no concurrency back-off on HTTP 429.
+- **Auth** implements Basic + Bearer only (not Digest/NTLM/Negotiate).
+- **Signed updater** exists but is dormant unless build-time env vars are set.
+- The global time-window **scheduler** backend exists but its UI was removed;
+  per-queue scheduling is the supported path (weekday editor UI still missing).
+- No code-signing cert yet → SmartScreen warnings on first installs.
 
 ---
 
 ## 3. Stack & conventions
 
+**Frontend**
 - **Vue 3 + TypeScript**, single-file components, `<script setup>`.
-- **Pinia** — single source of truth for UI state (`frontend/src/stores/downloads.ts`).
-- **Plain CSS** with CSS variables for theming. **No** component/design-token
-  libraries (shadcn, Tailwind, etc.) — they pull toward an airy look we don't want.
-- **Hugeicons** (`@hugeicons/vue` + `@hugeicons/core-free-icons`) for iconography,
-  wrapped by `frontend/src/components/Icon.vue` so call sites use semantic names.
-- Runs inside **Wails**, but the UI talks only to a **service interface**, never
-  to Wails directly (window controls are the one shell-level exception, isolated
-  in `frontend/src/services/window.ts` and guarded for browser fallback).
-- `tsconfig.json` uses `moduleResolution: "Bundler"` (required by package exports).
+- **Pinia** — two stores: `stores/downloads.ts` (domain state) and `stores/ui.ts`
+  (window mode, theme, accent, personalization).
+- **Plain CSS** with CSS variables for theming. **No** Tailwind / component-token
+  libraries — they pull toward an airy look we don't want.
+- **Hugeicons** wrapped by `components/Icon.vue` so call sites use semantic names.
+- The UI talks only to a **service interface**, never to Wails directly (window
+  controls are the one shell exception, isolated in `services/window.ts` and
+  guarded for browser fallback).
+
+**Backend (Go)**
+- Engine + API in `backend/` (`manager.go`, `model.go`, `storage.go`, `video.go`,
+  `torrent.go`, `diagnostics.go`, `updater/`, plus `*_windows.go` platform files).
+- **SQLite** persistence (WAL, transactions, migrations, corruption recovery).
+- **Torrents:** `github.com/anacrolix/torrent` (magnet + `.torrent`).
+- **Video:** external `yt-dlp` (probe/download) + `ffmpeg` (merge); resolved via
+  `findTool` (env var → managed `%APPDATA%/Grabify/binaries` → exe dir → PATH),
+  with an on-demand yt-dlp installer.
+- **Tray:** `github.com/energye/systray`. **Notifications:** `go-toast`.
+- **Windows accent:** read from `HKCU\...\Explorer\Accent\AccentPalette`.
+- **Native messaging host** (`grabify-native-host.exe`) bridges the browser
+  extension to the app over a local pipe + secret.
 
 ---
 
 ## 4. The contract (the anchor)
 
 Everything the UI does goes through the `DownloadService` interface in
-[`frontend/src/types/index.ts`](frontend/src/types/index.ts). Treat it as
-**frozen** — changing it means changing both sides of the eventual UI/backend
-boundary.
+[`frontend/src/types/index.ts`](frontend/src/types/index.ts). Two
+implementations of the same interface:
+- **`WailsDownloadService`** — the live impl, backed by the Go engine.
+- **`MockDownloadService`** — in-memory state + a fake progress ticker, used for
+  browser/dev iteration. The exported `downloadService` singleton picks the Wails
+  impl when the runtime is present, else the mock.
 
-- **Domain types:** `Download`, `DownloadState` (`queued | connecting | active |
-  paused | completed | error | canceled`), `DownloadKind` (`http | video |
-  torrent`), `SegmentProgress`, `VideoInfo` / `VideoFormat`, `TorrentInfo`,
-  `Category`, `Settings`.
-- **Commands (UI → service):** `listDownloads`, `getSettings`, `add`, `pause`,
-  `resume`, `pauseAll`, `resumeAll`, `cancel`, `remove`, `retry`, `reorder`,
-  `setGlobalSpeedLimit`, `setDownloadSpeedLimit`, `probeVideo`,
-  `selectVideoFormat`, `addTorrent`, `openFile`, `openFolder`, `copyUrl`,
-  `updateSettings`.
-- **Events (service → UI):** `onProgress` (batched ~250 ms), `onStateChange`,
-  `onAdded`, `onCapturePrompt`.
-
-Two implementations of the same interface:
-- **`MockDownloadService`** (today) — in-memory state + a fake progress ticker.
-- **`WailsDownloadService`** (future) — same signatures, backed by the Go engine.
-  Swapping is a one-line change in `frontend/src/services/MockDownloadService.ts`
-  (the exported `downloadService` singleton).
+Core domain types: `Download`, `DownloadState` (`queued | connecting | active |
+paused | completed | error | canceled`), `DownloadKind` (`http | video |
+torrent`), `SegmentProgress`, `VideoInfo` / `VideoFormat`, `TorrentInfo`,
+`Category`, `Queue`, `HostRule`, `Schedule`, `Settings`. The `Download`/`Settings`
+models carry the full engine surface: SHA-256, ETag/Last-Modified, HTTP/DNS/TLS/
+TTFB metrics, queues/priority, auth (scheme/username/credential target),
+processing stage, proxy, host rules, etc. (see `backend/model.go`).
 
 ---
 
-## 5. Mock layer (how it comes alive with no backend)
+## 5. UI surfaces & window modes
 
-- **Fixtures** (`frontend/src/services/fixtures.ts`) — a spread of `Download`
-  rows covering *every* state and all three kinds, plus edge cases: `sizeBytes:
-  null` (unknown size), `supportsResume: false`, an errored row, a multi-segment
-  active row, a video row with formats, a torrent row with peers.
-- **Ticker** — inside `MockDownloadService`, a 250 ms interval advances active
-  rows (bytes, %, speed, ETA, segments), transitions `connecting → active →
-  completed`, and fires `onProgress` / `onStateChange`.
-- **Dev capture trigger** — `MockDownloadService.triggerCapture()` (not part of
-  the contract) fires `onCapturePrompt` so the capture flow is testable; wired to
-  the toolbar "Capture" button.
+The app is a **single frameless window** that resizes between three **modes**
+(driven by `stores/ui.ts` + `services/window.ts`):
+- **full** — the normal app (table + toolbar + sidebar + status bar).
+- **mini** — a small, draggable floating progress widget (`MiniPlayer.vue`) with
+  resume/pause/cancel-all transport; the close button shrinks to this when
+  downloads are active, otherwise the app hides to the **system tray**.
+- **capture** — a compact popup (`CaptureWindow.vue`) for a single browser grab
+  (filename / category / save-to / video quality), which then drops to mini.
+
+Windows notifications fire on download complete/fail (gated by `notifyOnComplete`).
 
 ---
 
@@ -108,85 +134,100 @@ Two implementations of the same interface:
 
 ```
 frontend/src/
-  types/index.ts                 # THE CONTRACT (frozen)
+  types/index.ts                  # THE CONTRACT
   services/
-    MockDownloadService.ts        # mock impl of DownloadService + ticker + `downloadService` singleton
-    fixtures.ts                   # seed downloads, default categories & settings
-    window.ts                     # Wails window controls (min/max/close) w/ browser fallback
-  stores/downloads.ts             # Pinia store: state, filtered/sorted selectors, status totals, actions
-  utils/format.ts                 # formatBytes / formatSpeed / formatEta / formatDate / parseSpeedToBps
+    WailsDownloadService.ts        # live impl (Go engine)
+    MockDownloadService.ts         # mock impl + ticker; exports downloadService singleton
+    fixtures.ts                    # seed downloads/categories/settings for the mock
+    window.ts                      # window controls + mode transitions (full/mini/capture) + native theme
+    folderPicker.ts, videoTools.ts, integration.ts   # folder dialog, yt-dlp/ffmpeg health+install, browser setup bridge
+  stores/
+    downloads.ts                   # domain state, selectors, status totals, actions
+    ui.ts                          # window mode, view routing, theme, adaptive accent, personalization prefs
+  utils/  format.ts, color.ts, fileType.ts
   components/
-    AppShell.vue                  # layout: title bar + toolbar + sub-bar + sidebar + table + status bar; dialog orchestration
-    TitleBar.vue                  # custom frameless title bar (brand + window controls)
-    Toolbar.vue                   # labeled icon+text actions; selection-driven enable/disable
-    DownloadTable.vue             # centerpiece: sortable columns, multi-select, drag-reorder, per-state styling
-    CategorySidebar.vue           # All / Unfinished / Finished + category filters with counts
-    StatusBar.vue                 # total speed, active/queued/complete counts, global speed-limit menu
-    ProgressBar.vue               # segmented + indeterminate + single-bar progress, colored per state
-    StatusBadge.vue               # per-state status label + dot
-    Icon.vue                      # Hugeicons wrapper (semantic name -> icon)
+    AppShell.vue                   # layout + dialog/route orchestration; renders SettingsPage when view==='settings'
+    TitleBar.vue                   # frameless title bar (window controls; brand mark is CSS-only)
+    Toolbar.vue                    # add/resume/pause/delete/start-all/pause-all/settings (Capture button removed)
+    DownloadTable.vue              # centerpiece: sortable columns, multi-select, drag-reorder, per-state styling, normal/striped table
+    CategorySidebar.vue            # All / Unfinished / Finished + category filters
+    StatusBar.vue                  # total speed, counts, global speed-limit menu
+    ProgressBar.vue / StatusBadge.vue / Icon.vue
+    MiniPlayer.vue                 # floating mini progress widget (mode: mini)
+    CaptureWindow.vue              # compact browser-grab popup (mode: capture)
+    BrowserConnect.vue             # guided "connect your browser" extension-setup dialog
+    RowContextMenu.vue             # right-click actions incl. move-to-queue
+    SettingsPage.vue               # full settings PAGE (not a modal) — see §7
     dialogs/
-      Modal.vue                   # shared dialog shell (overlay, title bar, footer slot, ESC)
-      AddUrlDialog.vue            # url/filename/category/destination; auto-detects kind; clipboard prefill
-      VideoFormatDialog.vue       # format picker fed by probeVideo; resolution/size/A-V badges
-      PropertiesDialog.vue        # per-download detail: segments, resume support, per-download speed limit
-      SettingsDialog.vue          # tabbed: General / Downloads / Categories / Schedule / Notifications
-      RemoveConfirmDialog.vue     # remove (+ optional delete-from-disk) confirmation
-      CapturePrompt.vue           # "download this?" popup driven by onCapturePrompt
+      Modal.vue, AddUrlDialog.vue, VideoFormatDialog.vue,
+      PropertiesDialog.vue, RemoveConfirmDialog.vue
 ```
 
-Go / Wails shell (frontend-milestone: leave alone unless asked):
-`main.go` (Wails options — window is `Frameless: true`), `app.go`,
-`frontend/wailsjs/` (generated bindings + runtime).
+Go / Wails shell: `main.go` (frameless, `HideWindowOnClose`, tray icon,
+`OnBeforeClose`), `app.go` (startup: manager, capture listener, native-host
+registration, systray), `notify.go`, `accent*.go`, `integration*.go`,
+`nativehost*.go`, and `backend/` (the engine — see §3).
 
 ---
 
-## 7. State model notes
+## 7. Settings (full page, not a dialog)
 
-- The **store** wraps the service, subscribes to all four events on `init()`,
-  and exposes selectors: `visibleDownloads` (category filter + search + sort or
-  manual drag order), `selectedDownloads`, status-bar totals, per-category counts,
-  and selection-driven `canPause` / `canResume`.
-- **Sorting vs manual order:** clicking a column header sorts; drag-reordering a
-  row sets `manualOrder = true` (suspends column sort) and calls `reorder()`.
-- **Selection:** single / ctrl-toggle / shift-range, mirrors a native file list.
-- **Theme:** `data-theme="dark"` on `<html>`, toggled from the toolbar, persisted
-  to `localStorage` (`idm-theme`).
+`SettingsPage.vue` is a full page (mica nav rail + white content card) reached via
+the toolbar; it has a settings **search**, **Reset this page**, and **Restore all
+defaults**. Tabs:
+
+**General · Appearance · Personalization · Downloads · Connection · Browser
+Integration · File Types · Categories · Notifications · Advanced**
+
+- **Appearance** — theme: Light / Dark / System.
+- **Personalization** — applied live and persisted to `localStorage`
+  (`grabby-*`): **Table style** (Normal / Striped — striped adds zebra rows +
+  grid lines), **Row density** (Compact / Comfortable / Spacious → `--row-h`),
+  **Text size** (Small / Default / Large), **Colorful file-type icons** (on/off),
+  **Follow Windows accent color** (on/off), **Reduce animations** (on/off).
+- **Advanced** — houses the **Download Queues** manager (create, priority,
+  concurrency, per-queue speed limit, completion action, per-queue schedule),
+  temporary-files folder, and the redacted **diagnostics export**.
+
+> The old standalone **Schedule** tab was removed; the global scheduler backend
+> remains but is unused from the UI. Queues moved into Advanced.
 
 ---
 
-## 8. Running it
+## 8. State & theming notes
+
+- The **downloads store** wraps the service, subscribes to its events on `init()`,
+  and exposes `visibleDownloads` (category filter + search + sort or manual drag
+  order), selection helpers, and status totals.
+- **Sorting vs manual order:** column header sorts; drag-reorder sets manual order.
+- **Selection:** single / ctrl-toggle / shift-range, like a native file list.
+- **Theme** (`ui.ts`): `data-theme` on `<html>`, persisted to `localStorage`
+  (`grabby-theme`); resolves `system` via `prefers-color-scheme`.
+- **Adaptive accent:** on boot the UI reads the Windows system accent
+  (`App.GetSystemAccent`) and paints the accent CSS-var ramp; the *Follow Windows
+  accent color* toggle can disable this to use Grabify's built-in accent.
+
+---
+
+## 9. Running & building
 
 Frontend only (browser, mock data, HMR):
 ```bash
 cd frontend
 npm install
 npm run dev            # http://localhost:5173
-npm run build          # type-check (vue-tsc) + production build to dist/
+npm run build          # vue-tsc type-check + production build
 ```
 
 Full desktop app (requires Go + the Wails CLI):
 ```bash
-wails dev              # from repo root — live desktop app
-wails build            # packaged binary
+wails dev              # live desktop app
+wails build            # -> build/bin/Grabify.exe (+ installer, + native host)
 ```
 
-Note: in the browser, Wails runtime APIs are absent — window controls no-op and
-the drag region is inert by design; the app is otherwise fully functional on the
-mock service.
+Browser integration (extension + native host) is built by
+`scripts/build-integration.ps1`; the installer bundles the extension under an
+`integration/` folder and registers native messaging for Chrome/Edge.
 
----
-
-## 9. When the backend arrives
-
-1. Implement `DownloadService` in Go-backed TS as `WailsDownloadService` with the
-   **identical** signatures, translating events to Wails events (`onProgress`
-   stays batched ~250 ms).
-2. Swap the `downloadService` singleton export to the real impl.
-3. The UI should require **no further changes** — every field and event is
-   already exercised by the mock. If the backend needs something the UI doesn't
-   name, or the UI needs something the contract doesn't have, update
-   `types/index.ts` on **both** sides deliberately.
-
-The original frontend requirements live in `prd-front.md` (on the author's
-desktop, not in-repo) — this document supersedes it for day-to-day orientation.
+Note: in a plain browser, Wails runtime APIs are absent — window controls no-op,
+the drag region is inert, and the app runs on the mock service.

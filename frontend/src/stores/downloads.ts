@@ -328,6 +328,9 @@ export const useDownloadsStore = defineStore('downloads', {
       await downloadService.setDownloadSpeedLimit(id, bps);
     },
 
+    async probeUrl(url: string, referrer?: string) {
+      return downloadService.probeUrl(url, referrer);
+    },
     async probeVideo(url: string, browser?: 'chrome' | 'edge', browserProfile?: string) {
       return downloadService.probeVideo(url, browser, browserProfile);
     },

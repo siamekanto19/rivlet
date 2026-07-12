@@ -14,10 +14,51 @@ const CAP_W = 470;
 const CAP_H = 480;
 
 const THEME_KEY = 'grabby-theme';
+const TABLE_STYLE_KEY = 'grabby-table-style';
+const DENSITY_KEY = 'grabby-density';
+const TEXT_SIZE_KEY = 'grabby-text-size';
+const FOLLOW_ACCENT_KEY = 'grabby-follow-accent';
+const COLORFUL_ICONS_KEY = 'grabby-colorful-icons';
+const REDUCE_MOTION_KEY = 'grabby-reduce-motion';
 
 type Mode = 'full' | 'mini' | 'capture';
 type View = 'downloads' | 'settings';
 type ThemePref = 'light' | 'dark' | 'system';
+type TableStyle = 'normal' | 'striped';
+type Density = 'compact' | 'comfortable' | 'spacious';
+type TextSize = 'small' | 'default' | 'large';
+
+// -- small localStorage helpers (personalization prefs live client-side) ----
+function readEnum<T extends string>(key: string, allowed: readonly T[], fallback: T): T {
+  try {
+    const v = localStorage.getItem(key);
+    if (v && (allowed as readonly string[]).includes(v)) return v as T;
+  } catch {
+    /* ignore */
+  }
+  return fallback;
+}
+function readBool(key: string, fallback: boolean): boolean {
+  try {
+    const v = localStorage.getItem(key);
+    if (v === 'true') return true;
+    if (v === 'false') return false;
+  } catch {
+    /* ignore */
+  }
+  return fallback;
+}
+function persist(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    /* ignore */
+  }
+}
+
+function readTableStyle(): TableStyle {
+  return readEnum(TABLE_STYLE_KEY, ['normal', 'striped'] as const, 'normal');
+}
 
 // The Windows accent ramp, as returned by the Go side (App.GetSystemAccent).
 interface AccentPalette {
@@ -113,6 +154,12 @@ export const useUiStore = defineStore('ui', {
     mode: 'full' as Mode,
     view: 'downloads' as View,
     themePref: 'light' as ThemePref,
+    tableStyle: readTableStyle() as TableStyle,
+    density: readEnum(DENSITY_KEY, ['compact', 'comfortable', 'spacious'] as const, 'comfortable') as Density,
+    textSize: readEnum(TEXT_SIZE_KEY, ['small', 'default', 'large'] as const, 'default') as TextSize,
+    followSystemAccent: readBool(FOLLOW_ACCENT_KEY, true),
+    colorfulIcons: readBool(COLORFUL_ICONS_KEY, true),
+    reduceMotion: readBool(REDUCE_MOTION_KEY, false),
     accent: null as AccentPalette | null,
     browserConnect: false,
     captureReq: null as AddDownloadRequest | null,
@@ -192,7 +239,7 @@ export const useUiStore = defineStore('ui', {
     // have it); otherwise clear the overrides so the built-in accent applies.
     applyAccent() {
       const root = document.documentElement.style;
-      if (!this.accent) {
+      if (!this.accent || !this.followSystemAccent) {
         for (const v of ACCENT_VARS) root.removeProperty(v);
         return;
       }
@@ -216,6 +263,47 @@ export const useUiStore = defineStore('ui', {
         });
       }
     },
+    // -- personalization ----------------------------------------------------
+    // Stamp display prefs as root attributes so plain CSS can react (mirrors
+    // how `data-theme` drives theming). Called at boot and on every change.
+    applyDisplayPrefs() {
+      if (typeof document === 'undefined') return;
+      const root = document.documentElement;
+      root.setAttribute('data-density', this.density);
+      root.setAttribute('data-text-size', this.textSize);
+      root.setAttribute('data-file-icons', this.colorfulIcons ? 'color' : 'mono');
+      root.setAttribute('data-motion', this.reduceMotion ? 'reduced' : 'full');
+    },
+    setTableStyle(pref: TableStyle) {
+      this.tableStyle = pref;
+      persist(TABLE_STYLE_KEY, pref);
+    },
+    setDensity(pref: Density) {
+      this.density = pref;
+      persist(DENSITY_KEY, pref);
+      this.applyDisplayPrefs();
+    },
+    setTextSize(pref: TextSize) {
+      this.textSize = pref;
+      persist(TEXT_SIZE_KEY, pref);
+      this.applyDisplayPrefs();
+    },
+    setColorfulIcons(on: boolean) {
+      this.colorfulIcons = on;
+      persist(COLORFUL_ICONS_KEY, String(on));
+      this.applyDisplayPrefs();
+    },
+    setReduceMotion(on: boolean) {
+      this.reduceMotion = on;
+      persist(REDUCE_MOTION_KEY, String(on));
+      this.applyDisplayPrefs();
+    },
+    setFollowSystemAccent(on: boolean) {
+      this.followSystemAccent = on;
+      persist(FOLLOW_ACCENT_KEY, String(on));
+      this.applyAccent();
+    },
+
     setTheme(pref: ThemePref) {
       this.themePref = pref;
       try {
@@ -227,6 +315,7 @@ export const useUiStore = defineStore('ui', {
     },
     initTheme() {
       this.themePref = readThemePref();
+      this.applyDisplayPrefs();
       this.applyTheme();
       // React to OS theme changes while the preference is "system".
       if (typeof window !== 'undefined' && window.matchMedia) {
