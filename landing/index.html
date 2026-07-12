@@ -9,14 +9,6 @@
 <meta property="og:description" content="A fast, modern download manager for Windows. Free.">
 <meta property="og:type" content="website">
 <style>
-/* Satoshi (variable, 300–900) — self-hosted so headings never depend on a CDN */
-@font-face{
-  font-family:"Satoshi";
-  src:url("fonts/Satoshi-Variable.woff2") format("woff2");
-  font-weight:300 900;
-  font-style:normal;
-  font-display:swap;
-}
 /* =========================================================
    Grabify landing — monochrome, minimal. Black & white only.
    Precision over decoration: type, whitespace, hairlines.
@@ -32,8 +24,8 @@
   --hair-2:rgba(11,11,12,.16);
   --shadow:0 1px 2px rgba(11,11,12,.04), 0 24px 60px -28px rgba(11,11,12,.22);
 
-  --sans:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Inter","Helvetica Neue",Arial,sans-serif;
-  --display:"Satoshi","Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;
+  --sans:"Google Sans","Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Inter","Helvetica Neue",Arial,sans-serif;
+  --display:"Google Sans","Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
   --mono:ui-monospace,"Cascadia Code","SF Mono",Menlo,Consolas,monospace;
   --maxw:1080px;
 }
@@ -70,7 +62,7 @@ img,svg{display:block;max-width:100%}
 .nav.scrolled{background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:saturate(180%) blur(14px);-webkit-backdrop-filter:saturate(180%) blur(14px);border-bottom-color:var(--hair)}
 .nav .wrap{display:flex;align-items:center;gap:8px}
 .brand{display:flex;align-items:center;gap:9px;font-family:var(--display);font-weight:700;font-size:19px;letter-spacing:-.01em;margin-right:auto;color:var(--fg)}
-.brand .mark{width:26px;height:26px;color:var(--fg)}
+.brand .mark{width:20px;height:20px;color:var(--fg)}
 .nav-links{display:flex;align-items:center;gap:4px}
 .nav-links a{padding:8px 12px;border-radius:8px;color:var(--muted);font-size:14.5px;font-weight:450;transition:color .15s}
 .nav-links a:hover{color:var(--fg)}
@@ -116,7 +108,8 @@ section{position:relative}
 
 /* value grid — text-led, hairline separated */
 .grid{display:grid;grid-template-columns:repeat(3,1fr);margin-top:64px;border-top:1px solid var(--hair)}
-.cell{padding:36px 34px 40px 0;border-right:1px solid var(--hair)}
+.cell{padding:36px 34px 40px;border-right:1px solid var(--hair)}
+.cell:first-child{padding-left:0}
 .cell:last-child{border-right:none;padding-right:0}
 .cell .n{font-family:var(--mono);font-size:12px;color:var(--faint);letter-spacing:.04em}
 .cell h3{font-family:var(--display);font-size:1.2rem;font-weight:600;margin:14px 0 10px;letter-spacing:-.005em}
@@ -199,9 +192,12 @@ footer{border-top:1px solid var(--hair);padding:44px 0;margin-top:80px}
 <body>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
-  <symbol id="glogo" viewBox="226 202 800 800">
-    <path fill="currentColor" d="M 644 239 L 644 804 L 638 816 L 586 751 L 582 739 L 582 305 Z"/>
-    <path fill="currentColor" d="M 731 355 L 732 715 L 739 718 L 752 706 L 762 702 L 828 702 L 627 965 L 424 702 L 507 702 L 519 707 L 630 851 L 637 854 L 670 810 L 670 416 L 672 410 Z"/>
+  <symbol id="glogo" viewBox="4 4 16 16">
+    <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 9.99997L5 19"/>
+      <path d="M14.9999 19V13C14.9999 11.1144 14.9999 10.1716 14.4141 9.58579C13.8284 9 12.8856 9 10.9999 9H5"/>
+      <path d="M18.9999 19V15C18.9999 10.286 18.9999 7.92893 17.5355 6.46447C16.071 5 13.714 5 8.99994 5H5"/>
+    </g>
   </symbol>
 </defs></svg>
 

@@ -1,29 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1254 1254" width="1254" height="1254">
-  <g fill="currentColor">
-    <!-- left bar with pointed base -->
-    <path d="M 644 239
-             L 644 804
-             L 638 816
-             L 586 751
-             L 582 739
-             L 582 305
-             Z"/>
-    <!-- right bar fused with the downward arrowhead -->
-    <path d="M 731 355
-             L 732 715
-             L 739 718
-             L 752 706
-             L 762 702
-             L 828 702
-             L 627 965
-             L 424 702
-             L 507 702
-             L 519 707
-             L 630 851
-             L 637 854
-             L 670 810
-             L 670 416
-             L 672 410
-             Z"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="4 4 16 16" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M14 9.99997L5 19"/>
+  <path d="M14.9999 19V13C14.9999 11.1144 14.9999 10.1716 14.4141 9.58579C13.8284 9 12.8856 9 10.9999 9H5"/>
+  <path d="M18.9999 19V15C18.9999 10.286 18.9999 7.92893 17.5355 6.46447C16.071 5 13.714 5 8.99994 5H5"/>
 </svg>
