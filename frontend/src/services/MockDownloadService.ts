@@ -327,7 +327,7 @@ export class MockDownloadService implements DownloadService {
 
   // -- video grabber --------------------------------------------------------
 
-  async probeVideo(_url: string): Promise<VideoInfo> {
+  async probeVideo(_url: string, _browser?: 'chrome' | 'edge', _browserProfile?: string): Promise<VideoInfo> {
     return {
       title: 'Sample Video — Probed',
       selectedFormatId: 'v-1080',
@@ -357,6 +357,15 @@ export class MockDownloadService implements DownloadService {
 
   async addTorrent(magnetOrFilePath: string): Promise<Download> {
     return this.add({ url: magnetOrFilePath, kind: 'torrent' });
+  }
+
+  async addTorrentFile(): Promise<Download> {
+    // No file picker in the browser mock — simulate a chosen .torrent.
+    return this.add({
+      url: 'C:\\Users\\you\\Downloads\\example.torrent',
+      filename: 'ubuntu-24.04-desktop-amd64.iso',
+      kind: 'torrent',
+    });
   }
 
   // -- shell helpers (no-ops in mock, logged for visibility) ----------------

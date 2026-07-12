@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -52,8 +53,14 @@ func NewManager(stateDir string, emit EventSink) (*Manager, error) {
 	}
 	dl, _ := os.UserHomeDir()
 	dl = filepath.Join(dl, "Downloads")
-	m := &Manager{downloads: map[string]*Download{}, limits: map[string]*int64{}, cancels: map[string]context.CancelFunc{}, statePath: filepath.Join(stateDir, "state.json"), client: &http.Client{}, emit: emit, wake: make(chan struct{}, 1), closed: make(chan struct{})}
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.MaxIdleConns = 128
+	transport.MaxIdleConnsPerHost = 32
+	transport.MaxConnsPerHost = 32
+	transport.ForceAttemptHTTP2 = true
+	m := &Manager{downloads: map[string]*Download{}, limits: map[string]*int64{}, cancels: map[string]context.CancelFunc{}, statePath: filepath.Join(stateDir, "state.json"), client: &http.Client{Transport: transport}, emit: emit, wake: make(chan struct{}, 1), closed: make(chan struct{})}
 	m.settings = Settings{DownloadDir: dl, MaxConcurrent: 4, Categories: []Category{{ID: "general", Name: "General", Folder: dl, Extensions: []string{}}, {ID: "video", Name: "Video", Folder: filepath.Join(dl, "Video"), Extensions: []string{"mp4", "mkv", "webm", "mov"}}, {ID: "music", Name: "Music", Folder: filepath.Join(dl, "Music"), Extensions: []string{"mp3", "m4a", "flac", "wav"}}, {ID: "documents", Name: "Documents", Folder: filepath.Join(dl, "Documents"), Extensions: []string{"pdf", "doc", "docx", "zip"}}}}
+	m.normalizeSettings()
 	m.load()
 	go m.scheduler()
 	go m.progressEmitter()
@@ -91,18 +98,41 @@ func (m *Manager) GetSettings() Settings {
 	defer m.mu.RUnlock()
 	return clone(m.settings)
 }
+func (m *Manager) NeedsBrowserOnboarding() bool {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return !m.settings.BrowserOnboardingCompleted || m.settings.ShowBrowserOnboardingOnStartup
+}
+func (m *Manager) CompleteBrowserOnboarding() error {
+	m.mu.Lock()
+	m.settings.BrowserOnboardingCompleted = true
+	m.settings.ShowBrowserOnboardingOnStartup = false
+	m.mu.Unlock()
+	return m.save()
+}
 func (m *Manager) Add(r AddRequest) (Download, error) {
-	u, err := url.Parse(r.URL)
-	if err != nil || u.Scheme == "" {
-		return Download{}, errors.New("invalid download URL")
-	}
 	if r.Kind == "" {
 		r.Kind = "http"
 	}
-	if r.Filename == "" {
-		r.Filename = filepath.Base(strings.TrimSuffix(u.Path, "/"))
-		if r.Filename == "" || r.Filename == "." {
-			r.Filename = "download"
+	if r.Kind == "torrent" {
+		// Torrents carry a magnet URI or a .torrent file path, neither of which
+		// is an http(s) URL — skip the web-URL validation and derive a name.
+		if strings.TrimSpace(r.URL) == "" {
+			return Download{}, errors.New("no magnet link or torrent file provided")
+		}
+		if r.Filename == "" {
+			r.Filename = torrentDisplayName(r.URL)
+		}
+	} else {
+		u, err := url.Parse(r.URL)
+		if err != nil || u.Scheme == "" {
+			return Download{}, errors.New("invalid download URL")
+		}
+		if r.Filename == "" {
+			r.Filename = filepath.Base(strings.TrimSuffix(u.Path, "/"))
+			if r.Filename == "" || r.Filename == "." {
+				r.Filename = "download"
+			}
 		}
 	}
 	r.Filename = safeName(r.Filename)
@@ -114,7 +144,7 @@ func (m *Manager) Add(r AddRequest) (Download, error) {
 		r.DestinationPath = m.folder(r.Category)
 	}
 	id := fmt.Sprintf("dl-%d", time.Now().UnixNano())
-	d := &Download{ID: id, URL: r.URL, Filename: r.Filename, DestinationPath: r.DestinationPath, Category: r.Category, Kind: r.Kind, State: Queued, DateAdded: NowISO()}
+	d := &Download{ID: id, URL: r.URL, Filename: r.Filename, DestinationPath: r.DestinationPath, Category: r.Category, Kind: r.Kind, State: Queued, DateAdded: NowISO(), Referrer: r.Referrer, RequestUserAgent: r.UserAgent, VideoFormatID: r.VideoFormatID, BrowserProfile: r.BrowserProfile, Browser: r.Browser}
 	m.downloads[id] = d
 	m.order = append([]string{id}, m.order...)
 	out := clone(*d)
@@ -166,7 +196,11 @@ func (m *Manager) scheduler() {
 		if max < 1 {
 			max = 1
 		}
+		allowed := scheduleAllows(m.settings.Schedule, time.Now())
 		for _, id := range m.order {
+			if !allowed {
+				break
+			}
 			if running >= max {
 				break
 			}
@@ -182,8 +216,60 @@ func (m *Manager) scheduler() {
 		m.mu.Unlock()
 	}
 }
+
+func scheduleAllows(s *Schedule, now time.Time) bool {
+	if s == nil || !s.Enabled {
+		return true
+	}
+	parse := func(v string) (int, bool) {
+		parts := strings.Split(v, ":")
+		if len(parts) != 2 {
+			return 0, false
+		}
+		h, e1 := strconv.Atoi(parts[0])
+		min, e2 := strconv.Atoi(parts[1])
+		return h*60 + min, e1 == nil && e2 == nil && h >= 0 && h < 24 && min >= 0 && min < 60
+	}
+	start, ok1 := parse(s.StartHHmm)
+	stop, ok2 := parse(s.StopHHmm)
+	if !ok1 || !ok2 {
+		return true
+	}
+	current := now.Hour()*60 + now.Minute()
+	if start == stop {
+		return true
+	}
+	if start < stop {
+		return current >= start && current < stop
+	}
+	return current >= start || current < stop
+}
 func (m *Manager) run(ctx context.Context, id string) {
-	err := m.downloadHTTP(ctx, id)
+	m.mu.RLock()
+	retries, delay := m.settings.RetryCount, m.settings.RetryDelaySeconds
+	m.mu.RUnlock()
+	var err error
+	for attempt := 0; attempt <= retries; attempt++ {
+		m.mu.RLock()
+		kind := m.downloads[id].Kind
+		m.mu.RUnlock()
+		if kind == "video" {
+			err = m.downloadVideo(ctx, id)
+		} else if kind == "torrent" {
+			err = m.downloadTorrent(ctx, id)
+		} else {
+			err = m.downloadHTTP(ctx, id)
+		}
+		if err == nil || errors.Is(err, context.Canceled) || attempt == retries {
+			break
+		}
+		select {
+		case <-time.After(time.Duration(delay) * time.Second):
+		case <-ctx.Done():
+			err = ctx.Err()
+			break
+		}
+	}
 	m.mu.Lock()
 	delete(m.cancels, id)
 	d := m.downloads[id]
@@ -215,9 +301,21 @@ func (m *Manager) downloadHTTP(ctx context.Context, id string) error {
 	if d.Kind != "http" {
 		return fmt.Errorf("%s downloads require an external integration", d.Kind)
 	}
-	headCtx, cancelHead := context.WithTimeout(ctx, 30*time.Second)
+	m.mu.RLock()
+	timeout, segmentCount, userAgent := m.settings.RequestTimeoutSeconds, m.settings.SegmentCount, m.settings.UserAgent
+	m.mu.RUnlock()
+	if d.RequestUserAgent != "" {
+		userAgent = d.RequestUserAgent
+	}
+	headCtx, cancelHead := context.WithTimeout(ctx, time.Duration(timeout)*time.Second)
 	defer cancelHead()
 	req, _ := http.NewRequestWithContext(headCtx, http.MethodHead, d.URL, nil)
+	if userAgent != "" {
+		req.Header.Set("User-Agent", userAgent)
+	}
+	if d.Referrer != "" {
+		req.Header.Set("Referer", d.Referrer)
+	}
 	resp, err := m.client.Do(req)
 	if err != nil {
 		return err
@@ -232,11 +330,13 @@ func (m *Manager) downloadHTTP(ctx context.Context, id string) error {
 		live.SizeBytes = &size
 	}
 	if ranges {
-		live.Segments = makeSegments(size, 8)
+		live.Segments = makeSegments(size, adaptiveSegmentCount(size, segmentCount))
 	} else {
 		live.Segments = []SegmentProgress{{Index: 0, From: 0, To: max64(size-1, 0)}}
 	}
-	loadMeta(filepath.Join(live.DestinationPath, live.Filename)+".meta", live)
+	if !loadMeta(m.metaPath(live), live) {
+		loadMeta(filepath.Join(live.DestinationPath, live.Filename)+".meta", live)
+	}
 	live.State = Active
 	m.mu.Unlock()
 	m.emitState(id)
@@ -244,6 +344,33 @@ func (m *Manager) downloadHTTP(ctx context.Context, id string) error {
 		return err
 	}
 	path := filepath.Join(d.DestinationPath, d.Filename)
+	m.mu.RLock()
+	policy := m.settings.OverwritePolicy
+	resumedBytes := m.downloads[id].DownloadedBytes
+	m.mu.RUnlock()
+	if _, statErr := os.Stat(path); statErr == nil && resumedBytes == 0 {
+		switch policy {
+		case "skip":
+			return fmt.Errorf("file already exists: %s", path)
+		case "overwrite":
+			if err := os.Remove(path); err != nil {
+				return err
+			}
+		default:
+			ext, base := filepath.Ext(d.Filename), strings.TrimSuffix(d.Filename, filepath.Ext(d.Filename))
+			for i := 1; ; i++ {
+				candidate := fmt.Sprintf("%s (%d)%s", base, i, ext)
+				candidatePath := filepath.Join(d.DestinationPath, candidate)
+				if _, err := os.Stat(candidatePath); os.IsNotExist(err) {
+					d.Filename, path = candidate, candidatePath
+					m.mu.Lock()
+					m.downloads[id].Filename = candidate
+					m.mu.Unlock()
+					break
+				}
+			}
+		}
+	}
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0644)
 	if err != nil {
 		return err
@@ -276,6 +403,7 @@ func (m *Manager) downloadHTTP(ctx context.Context, id string) error {
 			return e
 		}
 	}
+	_ = os.Remove(m.metaPath(live))
 	_ = os.Remove(path + ".meta")
 	return nil
 }
@@ -294,9 +422,37 @@ func makeSegments(size int64, n int) []SegmentProgress {
 	}
 	return out
 }
+
+func adaptiveSegmentCount(size int64, configured int) int {
+	if configured < 1 {
+		configured = 1
+	}
+	const minimumSegmentSize = int64(4 * 1024 * 1024)
+	bySize := int((size + minimumSegmentSize - 1) / minimumSegmentSize)
+	if bySize < 1 {
+		bySize = 1
+	}
+	if bySize < configured {
+		return bySize
+	}
+	return configured
+}
 func (m *Manager) fetchSegment(ctx context.Context, id string, f *os.File, s SegmentProgress, ranged bool) error {
 	start := s.From + s.Done
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, m.urlFor(id), nil)
+	m.mu.RLock()
+	userAgent := m.settings.UserAgent
+	download := m.downloads[id]
+	m.mu.RUnlock()
+	if download != nil && download.RequestUserAgent != "" {
+		userAgent = download.RequestUserAgent
+	}
+	if userAgent != "" {
+		req.Header.Set("User-Agent", userAgent)
+	}
+	if download != nil && download.Referrer != "" {
+		req.Header.Set("Referer", download.Referrer)
+	}
 	if ranged {
 		req.Header.Set("Range", fmt.Sprintf("bytes=%d-%d", start, s.To))
 	}
@@ -311,7 +467,7 @@ func (m *Manager) fetchSegment(ctx context.Context, id string, f *os.File, s Seg
 	if !ranged && resp.StatusCode/100 != 2 {
 		return fmt.Errorf("server returned %s", resp.Status)
 	}
-	buf := make([]byte, 128*1024)
+	buf := make([]byte, 512*1024)
 	off := start
 	for {
 		n, e := resp.Body.Read(buf)
@@ -389,7 +545,7 @@ func (m *Manager) progressEmitter() {
 						d.ETASeconds = &v
 					}
 					updates = append(updates, clone(*d))
-					_ = saveMeta(filepath.Join(d.DestinationPath, d.Filename)+".meta", d)
+					_ = saveMeta(m.metaPath(d), d)
 				}
 			}
 			m.mu.Unlock()
@@ -463,6 +619,7 @@ func (m *Manager) Remove(id string, deleteFile bool) error {
 	if deleteFile && d != nil {
 		_ = os.Remove(filepath.Join(d.DestinationPath, d.Filename))
 		_ = os.Remove(filepath.Join(d.DestinationPath, d.Filename) + ".meta")
+		_ = os.Remove(m.metaPath(d))
 	}
 	return m.save()
 }
@@ -504,6 +661,7 @@ func (m *Manager) UpdateSettings(s Settings) error {
 	}
 	m.mu.Lock()
 	m.settings = clone(s)
+	m.normalizeSettings()
 	m.mu.Unlock()
 	m.signal()
 	return m.save()
@@ -551,8 +709,18 @@ func (m *Manager) URL(id string) (string, error) {
 	}
 	return "", errors.New("download not found")
 }
-func ProbeVideo(ctx context.Context, raw string) (VideoInfo, error) {
-	cmd := exec.CommandContext(ctx, "yt-dlp", "-J", "--no-playlist", raw)
+func ProbeVideo(ctx context.Context, raw, browser, profile string) (VideoInfo, error) {
+	tool, findErr := findTool("yt-dlp")
+	if findErr != nil {
+		return VideoInfo{}, findErr
+	}
+	args := []string{"-J", "--no-playlist"}
+	if (browser == "chrome" || browser == "edge") && profile != "" {
+		args = append(args, "--cookies-from-browser", browser+":"+profile)
+	}
+	args = append(args, "--", raw)
+	cmd := exec.CommandContext(ctx, tool, args...)
+	hideProcessWindow(cmd)
 	out, err := cmd.Output()
 	if err != nil {
 		return VideoInfo{}, fmt.Errorf("yt-dlp probe failed (install or bundle yt-dlp): %w", err)
@@ -560,19 +728,67 @@ func ProbeVideo(ctx context.Context, raw string) (VideoInfo, error) {
 	var x struct {
 		Title   string `json:"title"`
 		Formats []struct {
-			ID, FormatNote, Ext string
-			Filesize            *int64 `json:"filesize"`
-			Vcodec, Acodec      string
+			ID         string  `json:"format_id"`
+			FormatNote string  `json:"format_note"`
+			Ext        string  `json:"ext"`
+			Filesize   *int64  `json:"filesize"`
+			Vcodec     string  `json:"vcodec"`
+			Acodec     string  `json:"acodec"`
+			Height     int     `json:"height"`
+			FPS        float64 `json:"fps"`
 		} `json:"formats"`
 	}
 	if err = json.Unmarshal(out, &x); err != nil {
 		return VideoInfo{}, err
 	}
 	v := VideoInfo{Title: x.Title, Formats: []VideoFormat{}}
-	for _, f := range x.Formats {
-		v.Formats = append(v.Formats, VideoFormat{ID: f.ID, Label: strings.TrimSpace(f.FormatNote + " " + f.Ext), Ext: f.Ext, SizeBytes: f.Filesize, HasVideo: f.Vcodec != "none" && f.Vcodec != "", HasAudio: f.Acodec != "none" && f.Acodec != ""})
+	type rankedFormat struct {
+		format VideoFormat
+		height int
+		fps    float64
 	}
-	sort.SliceStable(v.Formats, func(i, j int) bool { return ptrVal(v.Formats[i].SizeBytes) > ptrVal(v.Formats[j].SizeBytes) })
+	ranked := make([]rankedFormat, 0, len(x.Formats))
+	seen := make(map[string]bool)
+	for _, f := range x.Formats {
+		hasVideo := f.Vcodec != "none" && f.Vcodec != ""
+		hasAudio := f.Acodec != "none" && f.Acodec != ""
+		if !hasVideo {
+			continue
+		}
+		if strings.TrimSpace(f.ID) == "" {
+			continue
+		}
+		// YouTube's 1080p+ formats are normally video-only adaptive streams.
+		// Present them as useful combined choices and let yt-dlp select the best
+		// matching audio stream for ffmpeg to merge.
+		id := f.ID
+		if !hasAudio {
+			id += "+bestaudio/best"
+		}
+		quality := strings.TrimSpace(f.FormatNote)
+		if quality == "" && f.Height > 0 {
+			quality = fmt.Sprintf("%dp", f.Height)
+		}
+		label := strings.TrimSpace(quality + " " + strings.ToUpper(f.Ext))
+		key := fmt.Sprintf("%d|%.2f|%s", f.Height, f.FPS, strings.ToLower(f.Ext))
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		ranked = append(ranked, rankedFormat{format: VideoFormat{ID: id, Label: label, Ext: f.Ext, SizeBytes: f.Filesize, HasVideo: true, HasAudio: true}, height: f.Height, fps: f.FPS})
+	}
+	sort.SliceStable(ranked, func(i, j int) bool {
+		if ranked[i].height != ranked[j].height {
+			return ranked[i].height > ranked[j].height
+		}
+		if ranked[i].fps != ranked[j].fps {
+			return ranked[i].fps > ranked[j].fps
+		}
+		return ptrVal(ranked[i].format.SizeBytes) > ptrVal(ranked[j].format.SizeBytes)
+	})
+	for _, item := range ranked {
+		v.Formats = append(v.Formats, item.format)
+	}
 	if len(v.Formats) > 0 {
 		v.SelectedFormatID = v.Formats[0].ID
 	}
@@ -635,26 +851,72 @@ func (m *Manager) load() {
 		return
 	}
 	m.settings = p.Settings
-	if m.settings.MaxConcurrent < 1 {
-		m.settings.MaxConcurrent = 4
-	}
+	m.normalizeSettings()
 	m.limits = p.Limits
 	if m.limits == nil {
 		m.limits = map[string]*int64{}
 	}
 	for _, d := range p.Downloads {
 		if d.State == Active || d.State == Connecting {
-			d.State = Paused
+			if m.settings.AutoResumeOnStartup {
+				d.State = Queued
+			} else {
+				d.State = Paused
+			}
 		}
 		m.downloads[d.ID] = d
 		m.order = append(m.order, d.ID)
+	}
+}
+
+func (m *Manager) normalizeSettings() {
+	if m.settings.MaxConcurrent < 1 {
+		m.settings.MaxConcurrent = 4
+	}
+	if m.settings.SegmentCount < 1 || m.settings.SegmentCount > 32 {
+		m.settings.SegmentCount = 16
+	}
+	if m.settings.RetryCount < 0 {
+		m.settings.RetryCount = 0
+	}
+	if m.settings.RetryDelaySeconds < 1 {
+		m.settings.RetryDelaySeconds = 5
+	}
+	if m.settings.RequestTimeoutSeconds < 5 {
+		m.settings.RequestTimeoutSeconds = 30
+	}
+	if m.settings.UserAgent == "" {
+		m.settings.UserAgent = "IDM-next/1.0"
+	}
+	if m.settings.OverwritePolicy == "" {
+		m.settings.OverwritePolicy = "rename"
+	}
+	if m.settings.TemporaryDir == "" {
+		m.settings.TemporaryDir = filepath.Join(os.TempDir(), "IDM-next")
+	}
+	if len(m.settings.CaptureFileTypes) == 0 {
+		m.settings.CaptureFileTypes = []string{"zip", "rar", "7z", "exe", "msi", "pdf", "mp3", "mp4", "mkv", "iso"}
+	}
+	if m.settings.PreferredVideoQuality == "" {
+		m.settings.PreferredVideoQuality = "best"
+	}
+	if m.settings.PreferredVideoContainer == "" {
+		m.settings.PreferredVideoContainer = "mp4"
+	}
+	if m.settings.ConcurrentFragments < 1 || m.settings.ConcurrentFragments > 16 {
+		m.settings.ConcurrentFragments = 4
+	}
+	if m.settings.ExcludedSites == nil {
+		// Never leave this nil — it serialises to JSON null and the UI expects
+		// an array it can render/join.
+		m.settings.ExcludedSites = []string{}
 	}
 }
 func saveMeta(path string, d *Download) error {
 	b, _ := json.Marshal(d.Segments)
 	return os.WriteFile(path, b, 0644)
 }
-func loadMeta(path string, d *Download) {
+func loadMeta(path string, d *Download) bool {
 	b, err := os.ReadFile(path)
 	if err == nil {
 		var s []SegmentProgress
@@ -664,6 +926,17 @@ func loadMeta(path string, d *Download) {
 			for _, x := range s {
 				d.DownloadedBytes += x.Done
 			}
+			return true
 		}
 	}
+	return false
+}
+
+func (m *Manager) metaPath(d *Download) string {
+	dir := m.settings.TemporaryDir
+	if dir == "" {
+		dir = filepath.Join(os.TempDir(), "IDM-next")
+	}
+	_ = os.MkdirAll(dir, 0755)
+	return filepath.Join(dir, d.ID+".meta.json")
 }

@@ -11,7 +11,7 @@ import (
 )
 
 // appID is the identity Windows shows in the toast and in Action Center.
-const appID = "Grabby"
+const appID = "Grabify"
 
 // appIconPNG is the Grabby icon, reused for toast notifications. go-toast needs
 // an on-disk image path, so we extract it once to a temp file.

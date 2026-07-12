@@ -1,0 +1,16 @@
+{
+  "name": "grabby-browser-extension",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build && node --test tests/*.test.mjs"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.322",
+    "esbuild": "^0.25.5",
+    "typescript": "^5.8.3"
+  }
+}

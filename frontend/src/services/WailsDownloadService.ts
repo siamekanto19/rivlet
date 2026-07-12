@@ -17,9 +17,10 @@ export class WailsDownloadService implements DownloadService {
   reorder = (ids: string[]) => App.Reorder(ids);
   setGlobalSpeedLimit = (bps: number | null) => App.SetGlobalSpeedLimit(bps as never);
   setDownloadSpeedLimit = (id: string, bps: number | null) => App.SetDownloadSpeedLimit(id, bps as never);
-  probeVideo = (url: string) => App.ProbeVideo(url) as Promise<VideoInfo>;
+  probeVideo = (url: string, browser?: 'chrome' | 'edge', browserProfile?: string) => App.ProbeVideo(url, browser ?? '', browserProfile ?? '') as Promise<VideoInfo>;
   selectVideoFormat = (id: string, formatId: string) => App.SelectVideoFormat(id, formatId);
   addTorrent = (value: string) => App.AddTorrent(value) as Promise<Download>;
+  addTorrentFile = () => App.AddTorrentFile() as Promise<Download>;
   openFile = (id: string) => App.OpenFile(id);
   openFolder = (id: string) => App.OpenFolder(id);
   copyUrl = (id: string) => App.CopyUrl(id);

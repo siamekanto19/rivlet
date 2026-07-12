@@ -51,7 +51,7 @@ func TestSegmentedDownloadAndJSONContract(t *testing.T) {
 				if string(b) != string(payload) {
 					t.Fatalf("downloaded payload differs: got %d bytes", len(b))
 				}
-				if len(got.Segments) != 8 || !got.SupportsResume || got.ProgressPct != 100 {
+				if len(got.Segments) != 1 || !got.SupportsResume || got.ProgressPct != 100 {
 					t.Fatalf("bad completed contract: %+v", got)
 				}
 				return
@@ -60,6 +60,15 @@ func TestSegmentedDownloadAndJSONContract(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 	}
 	t.Fatalf("download did not complete: %+v", m.List())
+}
+
+func TestAdaptiveSegmentCount(t *testing.T) {
+	if got := adaptiveSegmentCount(1024*1024, 16); got != 1 {
+		t.Fatalf("small file should use one connection, got %d", got)
+	}
+	if got := adaptiveSegmentCount(128*1024*1024, 16); got != 16 {
+		t.Fatalf("large file should use configured maximum, got %d", got)
+	}
 }
 
 func TestPersistedActiveDownloadRestoresPaused(t *testing.T) {
@@ -80,5 +89,16 @@ func TestPersistedActiveDownloadRestoresPaused(t *testing.T) {
 	defer m2.Close()
 	if got := m2.List(); len(got) != 1 || got[0].State != Paused {
 		t.Fatalf("unexpected recovery: %+v", got)
+	}
+}
+
+func TestScheduleAllowsOvernightWindow(t *testing.T) {
+	s := &Schedule{Enabled: true, StartHHmm: "23:00", StopHHmm: "06:00"}
+	zone := time.FixedZone("test", 0)
+	if !scheduleAllows(s, time.Date(2026, 1, 1, 1, 0, 0, 0, zone)) {
+		t.Fatal("01:00 should be inside overnight window")
+	}
+	if scheduleAllows(s, time.Date(2026, 1, 1, 12, 0, 0, 0, zone)) {
+		t.Fatal("12:00 should be outside overnight window")
 	}
 }

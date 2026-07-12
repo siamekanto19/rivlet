@@ -267,6 +267,9 @@ export const useDownloadsStore = defineStore('downloads', {
     async addTorrent(magnetOrPath: string) {
       return downloadService.addTorrent(magnetOrPath);
     },
+    async addTorrentFile() {
+      return downloadService.addTorrentFile();
+    },
     async pause(id: string) {
       await downloadService.pause(id);
     },
@@ -313,8 +316,8 @@ export const useDownloadsStore = defineStore('downloads', {
       await downloadService.setDownloadSpeedLimit(id, bps);
     },
 
-    async probeVideo(url: string) {
-      return downloadService.probeVideo(url);
+    async probeVideo(url: string, browser?: 'chrome' | 'edge', browserProfile?: string) {
+      return downloadService.probeVideo(url, browser, browserProfile);
     },
     async selectVideoFormat(id: string, formatId: string) {
       await downloadService.selectVideoFormat(id, formatId);

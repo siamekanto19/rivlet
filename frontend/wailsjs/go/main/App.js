@@ -10,12 +10,28 @@ export function AddTorrent(arg1) {
   return window['go']['main']['App']['AddTorrent'](arg1);
 }
 
+export function AddTorrentFile() {
+  return window['go']['main']['App']['AddTorrentFile']();
+}
+
+export function BeginBrowserSetup(arg1) {
+  return window['go']['main']['App']['BeginBrowserSetup'](arg1);
+}
+
 export function Cancel(arg1) {
   return window['go']['main']['App']['Cancel'](arg1);
 }
 
+export function CompleteBrowserOnboarding() {
+  return window['go']['main']['App']['CompleteBrowserOnboarding']();
+}
+
 export function CopyUrl(arg1) {
   return window['go']['main']['App']['CopyUrl'](arg1);
+}
+
+export function GetBrowserIntegration() {
+  return window['go']['main']['App']['GetBrowserIntegration']();
 }
 
 export function GetSettings() {
@@ -26,8 +42,24 @@ export function GetSystemAccent() {
   return window['go']['main']['App']['GetSystemAccent']();
 }
 
+export function InstallVideoTools() {
+  return window['go']['main']['App']['InstallVideoTools']();
+}
+
 export function ListDownloads() {
   return window['go']['main']['App']['ListDownloads']();
+}
+
+export function NeedsBrowserOnboarding() {
+  return window['go']['main']['App']['NeedsBrowserOnboarding']();
+}
+
+export function OpenBrowserExtensions(arg1) {
+  return window['go']['main']['App']['OpenBrowserExtensions'](arg1);
+}
+
+export function OpenExtensionFolder() {
+  return window['go']['main']['App']['OpenExtensionFolder']();
 }
 
 export function OpenFile(arg1) {
@@ -50,8 +82,8 @@ export function PickFolder(arg1) {
   return window['go']['main']['App']['PickFolder'](arg1);
 }
 
-export function ProbeVideo(arg1) {
-  return window['go']['main']['App']['ProbeVideo'](arg1);
+export function ProbeVideo(arg1, arg2, arg3) {
+  return window['go']['main']['App']['ProbeVideo'](arg1, arg2, arg3);
 }
 
 export function Remove(arg1, arg2) {
@@ -88,4 +120,8 @@ export function SetGlobalSpeedLimit(arg1) {
 
 export function UpdateSettings(arg1) {
   return window['go']['main']['App']['UpdateSettings'](arg1);
+}
+
+export function VideoToolsReady() {
+  return window['go']['main']['App']['VideoToolsReady']();
 }

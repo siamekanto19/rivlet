@@ -6,6 +6,11 @@ export namespace backend {
 	    destinationPath?: string;
 	    category?: string;
 	    kind?: string;
+	    referrer?: string;
+	    userAgent?: string;
+	    videoFormatId?: string;
+	    browser?: string;
+	    browserProfile?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new AddRequest(source);
@@ -18,6 +23,11 @@ export namespace backend {
 	        this.destinationPath = source["destinationPath"];
 	        this.category = source["category"];
 	        this.kind = source["kind"];
+	        this.referrer = source["referrer"];
+	        this.userAgent = source["userAgent"];
+	        this.videoFormatId = source["videoFormatId"];
+	        this.browser = source["browser"];
+	        this.browserProfile = source["browserProfile"];
 	    }
 	}
 	export class Category {
@@ -148,6 +158,11 @@ export namespace backend {
 	    segments?: SegmentProgress[];
 	    video?: VideoInfo;
 	    torrent?: TorrentInfo;
+	    referrer?: string;
+	    requestUserAgent?: string;
+	    videoFormatId?: string;
+	    browserProfile?: string;
+	    browser?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Download(source);
@@ -174,6 +189,11 @@ export namespace backend {
 	        this.segments = this.convertValues(source["segments"], SegmentProgress);
 	        this.video = this.convertValues(source["video"], VideoInfo);
 	        this.torrent = this.convertValues(source["torrent"], TorrentInfo);
+	        this.referrer = source["referrer"];
+	        this.requestUserAgent = source["requestUserAgent"];
+	        this.videoFormatId = source["videoFormatId"];
+	        this.browserProfile = source["browserProfile"];
+	        this.browser = source["browser"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -220,6 +240,28 @@ export namespace backend {
 	    notifyOnComplete: boolean;
 	    shutdownOnComplete: boolean;
 	    schedule?: Schedule;
+	    segmentCount: number;
+	    retryCount: number;
+	    retryDelaySeconds: number;
+	    requestTimeoutSeconds: number;
+	    userAgent: string;
+	    autoResumeOnStartup: boolean;
+	    overwritePolicy: string;
+	    removeCompleted: boolean;
+	    showCompletionDialog: boolean;
+	    temporaryDir: string;
+	    captureFileTypes: string[];
+	    excludedSites: string[];
+	    videoDetectionEnabled: boolean;
+	    disabledVideoSites: string[];
+	    preferredVideoQuality: string;
+	    preferredVideoContainer: string;
+	    concurrentFragments: number;
+	    cookieBrowser: string;
+	    cookieProfile: string;
+	    cookieConsent: boolean;
+	    browserOnboardingCompleted: boolean;
+	    showBrowserOnboardingOnStartup: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new Settings(source);
@@ -235,6 +277,28 @@ export namespace backend {
 	        this.notifyOnComplete = source["notifyOnComplete"];
 	        this.shutdownOnComplete = source["shutdownOnComplete"];
 	        this.schedule = this.convertValues(source["schedule"], Schedule);
+	        this.segmentCount = source["segmentCount"];
+	        this.retryCount = source["retryCount"];
+	        this.retryDelaySeconds = source["retryDelaySeconds"];
+	        this.requestTimeoutSeconds = source["requestTimeoutSeconds"];
+	        this.userAgent = source["userAgent"];
+	        this.autoResumeOnStartup = source["autoResumeOnStartup"];
+	        this.overwritePolicy = source["overwritePolicy"];
+	        this.removeCompleted = source["removeCompleted"];
+	        this.showCompletionDialog = source["showCompletionDialog"];
+	        this.temporaryDir = source["temporaryDir"];
+	        this.captureFileTypes = source["captureFileTypes"];
+	        this.excludedSites = source["excludedSites"];
+	        this.videoDetectionEnabled = source["videoDetectionEnabled"];
+	        this.disabledVideoSites = source["disabledVideoSites"];
+	        this.preferredVideoQuality = source["preferredVideoQuality"];
+	        this.preferredVideoContainer = source["preferredVideoContainer"];
+	        this.concurrentFragments = source["concurrentFragments"];
+	        this.cookieBrowser = source["cookieBrowser"];
+	        this.cookieProfile = source["cookieProfile"];
+	        this.cookieConsent = source["cookieConsent"];
+	        this.browserOnboardingCompleted = source["browserOnboardingCompleted"];
+	        this.showBrowserOnboardingOnStartup = source["showBrowserOnboardingOnStartup"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -285,6 +349,56 @@ export namespace main {
 	        this.dark2 = source["dark2"];
 	        this.dark3 = source["dark3"];
 	    }
+	}
+	export class BrowserInfo {
+	    id: string;
+	    name: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new BrowserInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	    }
+	}
+	export class BrowserIntegrationInfo {
+	    extensionDir: string;
+	    extensionId: string;
+	    connected: boolean;
+	    browsers: BrowserInfo[];
+	
+	    static createFrom(source: any = {}) {
+	        return new BrowserIntegrationInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.extensionDir = source["extensionDir"];
+	        this.extensionId = source["extensionId"];
+	        this.connected = source["connected"];
+	        this.browsers = this.convertValues(source["browsers"], BrowserInfo);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 
 }

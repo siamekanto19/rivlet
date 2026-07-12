@@ -7,15 +7,31 @@ export function Add(arg1:backend.AddRequest):Promise<backend.Download>;
 
 export function AddTorrent(arg1:string):Promise<backend.Download>;
 
+export function AddTorrentFile():Promise<backend.Download>;
+
+export function BeginBrowserSetup(arg1:string):Promise<void>;
+
 export function Cancel(arg1:string):Promise<void>;
 
+export function CompleteBrowserOnboarding():Promise<void>;
+
 export function CopyUrl(arg1:string):Promise<void>;
+
+export function GetBrowserIntegration():Promise<main.BrowserIntegrationInfo>;
 
 export function GetSettings():Promise<backend.Settings>;
 
 export function GetSystemAccent():Promise<main.AccentPalette>;
 
+export function InstallVideoTools():Promise<void>;
+
 export function ListDownloads():Promise<Array<backend.Download>>;
+
+export function NeedsBrowserOnboarding():Promise<boolean>;
+
+export function OpenBrowserExtensions(arg1:string):Promise<void>;
+
+export function OpenExtensionFolder():Promise<void>;
 
 export function OpenFile(arg1:string):Promise<void>;
 
@@ -27,7 +43,7 @@ export function PauseAll():Promise<void>;
 
 export function PickFolder(arg1:string):Promise<string>;
 
-export function ProbeVideo(arg1:string):Promise<backend.VideoInfo>;
+export function ProbeVideo(arg1:string,arg2:string,arg3:string):Promise<backend.VideoInfo>;
 
 export function Remove(arg1:string,arg2:boolean):Promise<void>;
 
@@ -46,3 +62,5 @@ export function SetDownloadSpeedLimit(arg1:string,arg2:any):Promise<void>;
 export function SetGlobalSpeedLimit(arg1:any):Promise<void>;
 
 export function UpdateSettings(arg1:backend.Settings):Promise<void>;
+
+export function VideoToolsReady():Promise<boolean>;

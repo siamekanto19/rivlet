@@ -67,6 +67,10 @@ export interface Download {
   segments?: SegmentProgress[]; // for the segmented-progress bar
   video?: VideoInfo; // present when kind === 'video'
   torrent?: TorrentInfo; // present when kind === 'torrent'
+  referrer?: string;
+  requestUserAgent?: string;
+  videoFormatId?: string;
+  browserProfile?: string;
 }
 
 export interface Category {
@@ -85,6 +89,28 @@ export interface Settings {
   notifyOnComplete: boolean;
   shutdownOnComplete: boolean;
   schedule: { enabled: boolean; startHHmm: string; stopHHmm: string } | null;
+  segmentCount: number;
+  retryCount: number;
+  retryDelaySeconds: number;
+  requestTimeoutSeconds: number;
+  userAgent: string;
+  autoResumeOnStartup: boolean;
+  overwritePolicy: 'rename' | 'overwrite' | 'skip';
+  removeCompleted: boolean;
+  showCompletionDialog: boolean;
+  temporaryDir: string;
+  captureFileTypes: string[];
+  excludedSites: string[];
+  videoDetectionEnabled: boolean;
+  disabledVideoSites: string[];
+  preferredVideoQuality: 'best' | '2160' | '1440' | '1080' | '720' | '480';
+  preferredVideoContainer: 'mp4' | 'mkv' | 'webm';
+  concurrentFragments: number;
+  cookieBrowser: '' | 'chrome' | 'edge';
+  cookieProfile: string;
+  cookieConsent: boolean;
+  browserOnboardingCompleted: boolean;
+  showBrowserOnboardingOnStartup: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -97,6 +123,11 @@ export interface AddDownloadRequest {
   destinationPath?: string;
   category?: string;
   kind?: DownloadKind;
+  referrer?: string;
+  userAgent?: string;
+  videoFormatId?: string;
+  browser?: 'chrome' | 'edge';
+  browserProfile?: string;
 }
 
 export type Unsubscribe = () => void;
@@ -122,11 +153,12 @@ export interface DownloadService {
   setDownloadSpeedLimit(id: string, bps: number | null): Promise<void>;
 
   // video grabber
-  probeVideo(url: string): Promise<VideoInfo>;
+  probeVideo(url: string, browser?: 'chrome' | 'edge', browserProfile?: string): Promise<VideoInfo>;
   selectVideoFormat(id: string, formatId: string): Promise<void>;
 
   // torrent
   addTorrent(magnetOrFilePath: string): Promise<Download>;
+  addTorrentFile(): Promise<Download>;
 
   // shell helpers
   openFile(id: string): Promise<void>;

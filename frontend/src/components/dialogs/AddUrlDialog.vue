@@ -8,16 +8,17 @@ import Modal from './Modal.vue';
 import { pickFolder } from '../../services/folderPicker';
 
 const store = useDownloadsStore();
+const props = defineProps<{ initialRequest?: AddDownloadRequest | null }>();
 
 const emit = defineEmits<{
   (e: 'close'): void;
   (e: 'submit', req: AddDownloadRequest): void;
 }>();
 
-const url = ref('');
-const filename = ref('');
-const category = ref('auto');
-const destination = ref('');
+const url = ref(props.initialRequest?.url ?? '');
+const filename = ref(props.initialRequest?.filename ?? '');
+const category = ref(props.initialRequest?.category ?? 'auto');
+const destination = ref(props.initialRequest?.destinationPath ?? '');
 const urlInput = ref<HTMLTextAreaElement | null>(null);
 
 const categories = computed(() => store.settings?.categories ?? []);
@@ -65,9 +66,11 @@ const valid = computed(() => urls.value.length >= 1);
 // Prefill from clipboard if it looks like a URL (mirrors IDM behavior).
 onMounted(async () => {
   try {
-    const text = await navigator.clipboard?.readText?.();
-    if (text && (/^https?:\/\//i.test(text) || text.startsWith('magnet:'))) {
-      url.value = text.trim();
+    if (!props.initialRequest?.url) {
+      const text = await navigator.clipboard?.readText?.();
+      if (text && (/^https?:\/\//i.test(text) || text.startsWith('magnet:'))) {
+        url.value = text.trim();
+      }
     }
   } catch {
     /* clipboard unavailable in dev; ignore */
@@ -89,6 +92,7 @@ async function submit() {
     return;
   }
   const req: AddDownloadRequest = {
+	...props.initialRequest,
     url: urls.value[0],
     filename: filename.value.trim() || undefined,
     kind: kind.value ?? undefined,
@@ -99,6 +103,12 @@ async function submit() {
 
 async function chooseDestination() {
   destination.value = await pickFolder(destination.value || store.settings?.downloadDir || '');
+}
+
+// Open a .torrent file via the native picker (handled in Go); closes on success.
+async function openTorrentFile() {
+  const d = await store.addTorrentFile();
+  if (d && d.id) emit('close');
 }
 </script>
 
@@ -121,6 +131,10 @@ async function chooseDestination() {
             <Icon :name="multi ? 'copy' : kind ?? 'http'" :size="14" />
             <span>{{ kindLabel }}</span>
           </div>
+          <button type="button" class="torrent-file-btn" @click="openTorrentFile">
+            <Icon name="torrent" :size="14" />
+            <span>Or open a <b>.torrent</b> file…</span>
+          </button>
         </div>
       </label>
 
@@ -229,5 +243,23 @@ async function chooseDestination() {
   line-height: 1.5;
   padding-top: 5px;
   padding-bottom: 5px;
+}
+.torrent-file-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  padding: 3px 2px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+.torrent-file-btn:hover {
+  color: var(--accent-text);
+}
+.torrent-file-btn :deep(svg) {
+  color: var(--ft-torrent);
 }
 </style>

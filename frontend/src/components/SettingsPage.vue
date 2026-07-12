@@ -10,14 +10,18 @@ import { pickFolder } from '../services/folderPicker';
 const store = useDownloadsStore();
 const ui = useUiStore();
 
-type Tab = 'general' | 'appearance' | 'downloads' | 'categories' | 'schedule' | 'notifications';
+type Tab = 'general' | 'appearance' | 'downloads' | 'connection' | 'browser' | 'filetypes' | 'categories' | 'schedule' | 'notifications' | 'advanced';
 const tabs: { id: Tab; label: string; icon: string }[] = [
   { id: 'general', label: 'General', icon: 'settings' },
   { id: 'appearance', label: 'Appearance', icon: 'appearance' },
   { id: 'downloads', label: 'Downloads', icon: 'http' },
+  { id: 'connection', label: 'Connection', icon: 'link' },
+  { id: 'browser', label: 'Browser Integration', icon: 'monitor' },
+  { id: 'filetypes', label: 'File Types', icon: 'file' },
   { id: 'categories', label: 'Categories', icon: 'folder' },
   { id: 'schedule', label: 'Schedule', icon: 'scheduler' },
   { id: 'notifications', label: 'Notifications', icon: 'notification' },
+  { id: 'advanced', label: 'Advanced', icon: 'settings' },
 ];
 const active = ref<Tab>('general');
 
@@ -30,6 +34,9 @@ const themeOptions: { id: 'light' | 'dark' | 'system'; label: string; icon: stri
 // working copy of persisted settings (theme is applied live, separately)
 const src = store.settings as Settings;
 const draft = reactive<Settings>(JSON.parse(JSON.stringify(src)));
+const captureTypesText = ref((draft.captureFileTypes ?? []).join(', '));
+const excludedSitesText = ref((draft.excludedSites ?? []).join('\n'));
+const disabledVideoSitesText = ref((draft.disabledVideoSites ?? []).join('\n'));
 
 const limitOn = ref(draft.globalSpeedLimitBps != null);
 const limitKb = ref(
@@ -67,6 +74,9 @@ function setExt(c: Category, value: string) {
 function save() {
   draft.globalSpeedLimitBps = limitOn.value ? parseSpeedToBps(String(limitKb.value), 'KB') : null;
   if (!draft.schedule) draft.schedule = { enabled: false, startHHmm: '01:00', stopHHmm: '08:00' };
+  draft.captureFileTypes = captureTypesText.value.split(/[\s,]+/).map((x) => x.replace(/^\./, '').toLowerCase()).filter(Boolean);
+  draft.excludedSites = excludedSitesText.value.split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
+  draft.disabledVideoSites = disabledVideoSitesText.value.split(/\r?\n/).map((x) => x.trim().toLowerCase()).filter(Boolean);
   store.updateSettings(JSON.parse(JSON.stringify(draft)));
   ui.closeSettings();
 }
@@ -132,7 +142,7 @@ async function chooseCategoryFolder(category: Category) {
         <section v-show="active === 'appearance'" class="pane">
           <div class="frow">
             <label>Theme</label>
-            <span class="hint">Choose how Grabby looks. “System” follows your Windows theme.</span>
+            <span class="hint">Choose how Grabify looks. “System” follows your Windows theme.</span>
             <div class="seg" role="radiogroup" aria-label="Theme">
               <button
                 v-for="o in themeOptions"
@@ -172,6 +182,54 @@ async function chooseCategoryFolder(category: Category) {
               Shut down computer when all downloads complete
             </label>
           </div>
+          <div class="frow inline">
+            <label>When a file already exists</label>
+            <select v-model="draft.overwritePolicy" class="wide-control">
+              <option value="rename">Create a unique name</option>
+              <option value="overwrite">Overwrite it</option>
+              <option value="skip">Skip the download</option>
+            </select>
+          </div>
+          <label class="chk"><input type="checkbox" v-model="draft.autoResumeOnStartup" /> Resume interrupted downloads when Grabify starts</label>
+          <label class="chk"><input type="checkbox" v-model="draft.removeCompleted" /> Remove completed items from the list automatically</label>
+        </section>
+
+        <!-- CONNECTION -->
+        <section v-show="active === 'connection'" class="pane">
+          <div class="section-intro"><h2>Connection tuning</h2><p>Control parallel connections, failure recovery, and HTTP identity.</p></div>
+          <div class="frow inline"><label>Segments per download</label><input class="narrow" type="number" min="1" max="32" v-model.number="draft.segmentCount" /></div>
+          <span class="hint">Grabify adapts this maximum to file size. Sixteen is fast for large files without wasting connections on small files.</span>
+          <div class="frow inline"><label>Retry failed downloads</label><div class="unit-control"><input class="narrow" type="number" min="0" max="20" v-model.number="draft.retryCount" /><span>times</span></div></div>
+          <div class="frow inline"><label>Delay between retries</label><div class="unit-control"><input class="narrow" type="number" min="1" max="3600" v-model.number="draft.retryDelaySeconds" /><span>seconds</span></div></div>
+          <div class="frow inline"><label>Connection timeout</label><div class="unit-control"><input class="narrow" type="number" min="5" max="300" v-model.number="draft.requestTimeoutSeconds" /><span>seconds</span></div></div>
+          <div class="frow"><label>User agent for manually added downloads</label><input v-model="draft.userAgent" type="text" spellcheck="false" /></div>
+        </section>
+
+        <!-- FILE TYPES -->
+        <section v-show="active === 'filetypes'" class="pane">
+          <div class="section-intro"><h2>Browser capture rules</h2><p>Choose which downloads the browser integration should offer to Grabify.</p></div>
+          <div class="frow">
+            <button class="btn primary connect-btn" @click="ui.openBrowserConnect()">
+              <Icon name="link" :size="15" /> Set up browser integration…
+            </button>
+            <span class="hint">Load Grabify's extension into Chrome or Edge, with step-by-step help.</span>
+          </div>
+          <div class="frow"><label>Captured file extensions</label><textarea v-model="captureTypesText" rows="3" placeholder="zip, exe, pdf, mp4" /><span class="hint">Separate extensions with commas or spaces.</span></div>
+          <div class="frow"><label>Excluded sites</label><textarea v-model="excludedSitesText" rows="5" placeholder="*.example.com&#10;downloads.example.org" /><span class="hint">One hostname pattern per line.</span></div>
+        </section>
+
+        <!-- BROWSER INTEGRATION -->
+        <section v-show="active === 'browser'" class="pane">
+          <label class="chk"><input type="checkbox" v-model="draft.showBrowserOnboardingOnStartup" /> Show browser setup whenever Grabify starts</label>
+          <div class="section-intro"><h2>Grabify browser integration</h2><p>Connect the bundled Chrome or Edge extension to this desktop app.</p></div>
+          <div class="integration-status"><span class="status-dot" /> Native capture listener is active</div>
+          <ol class="install-steps"><li>Open <b>chrome://extensions</b> or <b>edge://extensions</b>.</li><li>Enable Developer mode and choose <b>Load unpacked</b>.</li><li>Select Grabify's installed <b>integration\extension</b> folder.</li><li>Open extension options and run Test connection.</li></ol>
+          <label class="chk"><input type="checkbox" v-model="draft.videoDetectionEnabled" /> Enable playback-based video detection after granting all-site access in the extension</label>
+          <div class="frow"><label>Never prompt on these sites</label><textarea v-model="disabledVideoSitesText" rows="4" placeholder="example.com" /><span class="hint">Keep this list aligned with the extension's Disabled sites list.</span></div>
+          <div class="frow inline"><label>Preferred video quality</label><select v-model="draft.preferredVideoQuality" class="wide-control"><option value="best">Best available</option><option value="2160">2160p</option><option value="1440">1440p</option><option value="1080">1080p</option><option value="720">720p</option><option value="480">480p</option></select></div>
+          <div class="frow inline"><label>Preferred container</label><select v-model="draft.preferredVideoContainer" class="wide-control"><option value="mp4">MP4</option><option value="mkv">MKV</option><option value="webm">WebM</option></select></div>
+          <div class="frow inline"><label>Concurrent video fragments</label><input class="narrow" type="number" min="1" max="16" v-model.number="draft.concurrentFragments" /></div>
+          <div class="cookie-box"><label class="chk"><input type="checkbox" v-model="draft.cookieConsent" /> Allow yt-dlp to read a selected browser profile only when sign-in is required</label><div class="cookie-row"><select v-model="draft.cookieBrowser" :disabled="!draft.cookieConsent"><option value="">Choose browser</option><option value="chrome">Chrome</option><option value="edge">Edge</option></select><input v-model="draft.cookieProfile" :disabled="!draft.cookieConsent" placeholder="Profile path or name (for example Default)" /></div><span class="hint">Grabify stores only this browser/profile choice, never cookie values. Disable this option to revoke consent.</span></div>
         </section>
 
         <!-- CATEGORIES -->
@@ -239,6 +297,14 @@ async function chooseCategoryFolder(category: Category) {
               Show a notification when a download completes
             </label>
           </div>
+          <label class="chk"><input type="checkbox" v-model="draft.showCompletionDialog" /> Show a completion dialog with Open and Open folder actions</label>
+        </section>
+
+        <!-- ADVANCED -->
+        <section v-show="active === 'advanced'" class="pane">
+          <div class="section-intro"><h2>Storage and safety</h2><p>Advanced options for incomplete downloads and automated actions.</p></div>
+          <div class="frow"><label>Temporary files folder</label><div class="folder-control"><input :value="draft.temporaryDir" type="text" readonly /><button class="browse" type="button" @click="async () => draft.temporaryDir = await pickFolder(draft.temporaryDir)"><Icon name="folder" :size="15" /> Browse</button></div></div>
+          <div class="notice">Site passwords, arbitrary completion programs, forced process termination, and dial-up controls are intentionally not stored or executed until a secure credential and permission model is available.</div>
         </section>
         </div>
 
@@ -425,6 +491,19 @@ async function chooseCategoryFolder(category: Category) {
 .narrow {
   width: 92px;
 }
+.wide-control { width: 210px; }
+.unit-control { display: flex; align-items: center; gap: 8px; color: var(--text-muted); font-size: var(--fs-sm); }
+.section-intro { padding-bottom: 4px; border-bottom: 1px solid var(--border); }
+.section-intro h2 { margin: 0 0 4px; font-size: 15px; font-weight: 650; }
+.section-intro p { margin: 0; color: var(--text-muted); font-size: var(--fs-sm); }
+textarea { width: 100%; min-height: 80px; resize: vertical; }
+.notice { padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-subtle); color: var(--text-muted); font-size: var(--fs-sm); line-height: 1.45; }
+.integration-status { display:flex;align-items:center;gap:9px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-subtle);font-weight:600 }
+.status-dot { width:8px;height:8px;border-radius:50%;background:var(--st-active);box-shadow:0 0 0 3px color-mix(in srgb,var(--st-active) 18%,transparent) }
+.install-steps { margin:0;padding:12px 14px 12px 34px;border:1px solid var(--border);border-radius:var(--radius);color:var(--text-muted);line-height:1.7 }
+.install-steps b { color:var(--text) }
+.cookie-box { display:flex;flex-direction:column;gap:10px;padding:12px 14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-subtle) }
+.cookie-row { display:grid;grid-template-columns:130px 1fr;gap:8px }
 
 /* theme segmented control */
 .seg {
@@ -556,6 +635,12 @@ async function chooseCategoryFolder(category: Category) {
 .cat-fields label {
   font-size: var(--fs-sm);
   color: var(--text-muted);
+}
+.connect-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
 }
 .sp-foot {
   display: flex;

@@ -1,0 +1,10 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Grabify Integration</title><link rel="stylesheet" href="options.css"></head>
+<body><main>
+  <h1>Grabify Integration</h1><p class="lead">Connect Chrome or Edge to the Grabify desktop application.</p>
+  <section><h2>Connection</h2><div id="status" class="status">Checking native host…</div><button id="test">Test connection</button></section>
+  <section><h2>Browser downloads</h2><label><input id="capture-downloads" type="checkbox"> Automatically hand browser downloads to Grabify</label><p class="privacy">The browser continues until Grabify confirms the handoff. If Grabify is unavailable, the browser download continues normally.</p></section>
+  <section><h2>Video detection</h2><label class="switch"><input id="video-enabled" type="checkbox"><span>Offer supported videos after playback begins</span></label><p>Enabling this requests access to observe media on websites. Grabify does not read page text or browser cookies.</p><button id="grant">Grant all-site access</button><button id="revoke" class="secondary">Revoke access</button></section>
+  <section><h2>Disabled sites</h2><textarea id="disabled-sites" rows="6" placeholder="example.com&#10;video.example.org"></textarea><button id="save">Save settings</button></section>
+  <p class="privacy">DRM-protected media is never offered or downloaded.</p>
+</main><script src="options.js"></script></body></html>

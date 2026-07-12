@@ -2,22 +2,32 @@ package main
 
 import (
 	"context"
+	"crypto/subtle"
+	"encoding/json"
+	"net"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/energye/systray"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"idm-next/backend"
+	"idm-next/backend/capture"
 )
 
 // App is the Wails adapter. Domain and engine logic live in backend.Manager.
 type App struct {
-	ctx      context.Context
-	manager  *backend.Manager
-	started  bool // true once startup completed, so restored state on load
+	ctx     context.Context
+	manager *backend.Manager
+	started bool // true once startup completed, so restored state on load
 	// (which does not emit) never triggers spurious notifications
 	quitting bool // set when the user chooses Quit from the tray, so the
 	// close is allowed through instead of hiding to the tray
+	captureListener  net.Listener
+	captureSecret    string
+	captureMu        sync.Mutex
+	captureSeen      map[string]struct{}
+	browserConnected bool // set once the extension successfully talks to us
 }
 
 func NewApp() *App { return &App{} }
@@ -34,15 +44,139 @@ func (a *App) startup(ctx context.Context) {
 		}
 	})
 	a.started = true
+	a.captureSeen = make(map[string]struct{})
+	a.captureSecret, _ = capture.EnsureSecret()
+	if listener, err := capture.Listen(); err == nil {
+		a.captureListener = listener
+		go a.serveCapture(listener)
+	}
+	// Point the browsers' native-messaging config at our host so the extension
+	// can reach us — works in dev too, not just via the installer.
+	registerNativeHost()
 	// System tray runs on its own message loop; keep Grabby alive when the
 	// window is hidden and offer a way to restore or truly quit it.
 	go systray.Run(a.trayReady, func() {})
 }
 func (a *App) shutdown(context.Context) {
+	if a.captureListener != nil {
+		_ = a.captureListener.Close()
+	}
 	systray.Quit()
 	if a.manager != nil {
 		a.manager.Close()
 	}
+}
+
+// markBrowserConnected records that the extension has reached us and, on the
+// first successful connection, tells the UI so the setup flow can confirm it.
+func (a *App) markBrowserConnected(browser string) {
+	a.captureMu.Lock()
+	first := !a.browserConnected
+	a.browserConnected = true
+	a.captureMu.Unlock()
+	if first && a.ctx != nil {
+		runtime.EventsEmit(a.ctx, "browserConnected", browser)
+	}
+}
+
+func (a *App) serveCapture(listener net.Listener) {
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			return
+		}
+		go a.handleCapture(conn)
+	}
+}
+
+func (a *App) handleCapture(conn net.Conn) {
+	defer conn.Close()
+	var request capture.Envelope
+	if err := capture.Read(conn, &request); err != nil {
+		_ = capture.Write(conn, capture.Response{Version: capture.Version, OK: false, Error: err.Error()})
+		return
+	}
+	response := capture.Response{Version: capture.Version, ID: request.ID}
+	if err := request.Validate(); err != nil {
+		response.Error = err.Error()
+		_ = capture.Write(conn, response)
+		return
+	}
+	if subtle.ConstantTimeCompare([]byte(request.Secret), []byte(a.captureSecret)) != 1 {
+		response.Error = "authentication failed"
+		_ = capture.Write(conn, response)
+		return
+	}
+	a.markBrowserConnected(request.Source.Browser)
+	a.captureMu.Lock()
+	if _, duplicate := a.captureSeen[request.ID]; duplicate {
+		a.captureMu.Unlock()
+		response.OK = true
+		response.Data = map[string]any{"duplicate": true}
+		_ = capture.Write(conn, response)
+		return
+	}
+	a.captureSeen[request.ID] = struct{}{}
+	if len(a.captureSeen) > 2048 {
+		a.captureSeen = map[string]struct{}{request.ID: {}}
+	}
+	a.captureMu.Unlock()
+
+	var add backend.AddRequest
+	switch request.Action {
+	case "health":
+		response.OK = true
+		response.Data = map[string]any{"app": "Grabify", "ready": true}
+	case "capture.link", "capture.download":
+		var payload capture.LinkPayload
+		if err := json.Unmarshal(request.Payload, &payload); err != nil {
+			response.Error = "invalid link payload"
+			break
+		}
+		if err := capture.ValidateHTTPURL(payload.URL); err != nil {
+			response.Error = err.Error()
+			break
+		}
+		add = backend.AddRequest{URL: payload.URL, Filename: payload.SuggestedFilename, Kind: "http", Referrer: payload.Referrer, UserAgent: payload.UserAgent, Browser: request.Source.Browser}
+		if request.Action == "capture.download" {
+			download, err := a.manager.Add(add)
+			if err != nil {
+				response.Error = err.Error()
+				break
+			}
+			response.OK = true
+			response.Data = map[string]any{"downloadId": download.ID}
+		} else {
+			response.OK = true
+		}
+	case "capture.video":
+		var payload capture.VideoPayload
+		if err := json.Unmarshal(request.Payload, &payload); err != nil {
+			response.Error = "invalid video payload"
+			break
+		}
+		if payload.DRMDetected {
+			response.Error = "DRM-protected media is not supported"
+			break
+		}
+		if err := capture.ValidateHTTPURL(payload.PageURL); err != nil {
+			response.Error = err.Error()
+			break
+		}
+		settings := a.manager.GetSettings()
+		profile := ""
+		if settings.CookieConsent && settings.CookieBrowser == request.Source.Browser {
+			profile = settings.CookieProfile
+		}
+		add = backend.AddRequest{URL: payload.PageURL, Filename: payload.Title, Kind: "video", UserAgent: payload.UserAgent, Browser: request.Source.Browser, BrowserProfile: profile}
+		response.OK = true
+	}
+	if response.OK && request.Action != "health" && request.Action != "capture.download" {
+		// The UI shows a small capture popup and brings the window up itself
+		// (at popup size), so we don't pre-show the full-size window here.
+		runtime.EventsEmit(a.ctx, "capturePrompt", add)
+	}
+	_ = capture.Write(conn, response)
 }
 
 // beforeClose is invoked for every close request routed through the Wails
@@ -61,8 +195,8 @@ func (a *App) beforeClose(ctx context.Context) (preventClose bool) {
 // trayReady wires up the system-tray icon and menu once its loop is running.
 func (a *App) trayReady() {
 	systray.SetIcon(trayIcon)
-	systray.SetTitle("Grabby")
-	systray.SetTooltip("Grabby — Download Manager")
+	systray.SetTitle("Grabify")
+	systray.SetTooltip("Grabify — Download Manager")
 
 	// Left / double click on the icon restores the window.
 	systray.SetOnClick(func(systray.IMenu) { a.showWindow() })
@@ -75,10 +209,10 @@ func (a *App) trayReady() {
 		}
 	})
 
-	mShow := systray.AddMenuItem("Show Grabby", "Restore the Grabby window")
+	mShow := systray.AddMenuItem("Show Grabify", "Restore the Grabify window")
 	mShow.Click(a.showWindow)
 	systray.AddSeparator()
-	mQuit := systray.AddMenuItem("Quit Grabby", "Exit the application")
+	mQuit := systray.AddMenuItem("Quit Grabify", "Exit the application")
 	mQuit.Click(func() {
 		a.quitting = true
 		runtime.Quit(a.ctx)
@@ -92,6 +226,8 @@ func (a *App) showWindow() {
 }
 func (a *App) ListDownloads() []backend.Download                    { return a.manager.List() }
 func (a *App) GetSettings() backend.Settings                        { return a.manager.GetSettings() }
+func (a *App) NeedsBrowserOnboarding() bool                         { return a.manager.NeedsBrowserOnboarding() }
+func (a *App) CompleteBrowserOnboarding() error                     { return a.manager.CompleteBrowserOnboarding() }
 func (a *App) Add(req backend.AddRequest) (backend.Download, error) { return a.manager.Add(req) }
 func (a *App) Pause(id string)                                      { a.manager.Pause(id) }
 func (a *App) Resume(id string)                                     { a.manager.Resume(id) }
@@ -103,14 +239,32 @@ func (a *App) Retry(id string)                                      { a.manager.
 func (a *App) Reorder(ids []string) error                           { return a.manager.Reorder(ids) }
 func (a *App) SetGlobalSpeedLimit(bps *int64) error                 { return a.manager.SetGlobal(bps) }
 func (a *App) SetDownloadSpeedLimit(id string, bps *int64) error    { return a.manager.SetLimit(id, bps) }
-func (a *App) ProbeVideo(url string) (backend.VideoInfo, error) {
-	return backend.ProbeVideo(a.ctx, url)
+func (a *App) ProbeVideo(url, browser, profile string) (backend.VideoInfo, error) {
+	return backend.ProbeVideo(a.ctx, url, browser, profile)
 }
 func (a *App) SelectVideoFormat(id, formatID string) error {
 	return a.manager.SelectVideoFormat(id, formatID)
 }
 func (a *App) AddTorrent(value string) (backend.Download, error) {
 	return a.manager.Add(backend.AddRequest{URL: value, Kind: "torrent"})
+}
+
+// AddTorrentFile opens a file picker for a .torrent and queues it. Returns an
+// empty download (no error) if the user cancels the dialog.
+func (a *App) AddTorrentFile() (backend.Download, error) {
+	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
+		Title: "Choose a .torrent file",
+		Filters: []runtime.FileFilter{
+			{DisplayName: "Torrent files (*.torrent)", Pattern: "*.torrent"},
+		},
+	})
+	if err != nil {
+		return backend.Download{}, err
+	}
+	if path == "" {
+		return backend.Download{}, nil // cancelled
+	}
+	return a.manager.AddTorrentFile(path)
 }
 func (a *App) OpenFile(id string) error   { return a.manager.Open(id, false) }
 func (a *App) OpenFolder(id string) error { return a.manager.Open(id, true) }
@@ -129,3 +283,23 @@ func (a *App) PickFolder(currentPath string) (string, error) {
 	})
 }
 func (a *App) UpdateSettings(s backend.Settings) error { return a.manager.UpdateSettings(s) }
+
+// VideoToolsReady reports whether the extractor and merger are available.
+func (a *App) VideoToolsReady() bool {
+	return backend.HasYtDlp() && backend.HasFFmpeg()
+}
+
+// InstallVideoTools downloads yt-dlp into Grabby's managed tools folder,
+// emitting "videoToolsProgress" events so the UI can show a progress bar.
+func (a *App) InstallVideoTools() error {
+	_, err := backend.EnsureYtDlp(a.ctx, func(received, total int64) {
+		runtime.EventsEmit(a.ctx, "videoToolsProgress", map[string]any{"received": received, "total": total})
+	})
+	if err != nil {
+		return err
+	}
+	_, err = backend.EnsureFFmpeg(a.ctx, func(received, total int64) {
+		runtime.EventsEmit(a.ctx, "videoToolsProgress", map[string]any{"received": received, "total": total})
+	})
+	return err
+}

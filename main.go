@@ -23,7 +23,7 @@ func main() {
 
 	// Create application with options
 	err := wails.Run(&options.App{
-		Title:     "Grabby",
+		Title:     "Grabify",
 		Width:     1180,
 		Height:    720,
 		MinWidth:  900,
@@ -35,6 +35,10 @@ func main() {
 		// close button routes through runtime.Quit -> OnBeforeClose, which
 		// applies the same policy. A true quit only happens from the tray menu.
 		HideWindowOnClose: true,
+		SingleInstanceLock: &options.SingleInstanceLock{
+			UniqueId:               "3f4ffdc2-892d-4c72-953e-7f1d14ad573e",
+			OnSecondInstanceLaunch: func(options.SecondInstanceData) { app.showWindow() },
+		},
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},

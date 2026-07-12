@@ -1,16 +1,21 @@
 import { defineStore } from 'pinia';
 import { windowControls } from '../services/window';
 import { alpha, darken, lighten, mix, readableText } from '../utils/color';
+import type { AddDownloadRequest } from '../types';
+import { integration } from '../services/integration';
 
 // Mini-player dimensions and the full-window size to restore to.
 const MINI_W = 360;
 const MINI_H = 158;
 const FULL_W = 1180;
 const FULL_H = 720;
+// Compact capture popup for browser grabs.
+const CAP_W = 470;
+const CAP_H = 480;
 
 const THEME_KEY = 'grabby-theme';
 
-type Mode = 'full' | 'mini';
+type Mode = 'full' | 'mini' | 'capture';
 type View = 'downloads' | 'settings';
 type ThemePref = 'light' | 'dark' | 'system';
 
@@ -109,6 +114,8 @@ export const useUiStore = defineStore('ui', {
     view: 'downloads' as View,
     themePref: 'light' as ThemePref,
     accent: null as AccentPalette | null,
+    browserConnect: false,
+    captureReq: null as AddDownloadRequest | null,
   }),
   getters: {
     // The concrete theme in effect (resolves 'system' to light/dark).
@@ -131,12 +138,43 @@ export const useUiStore = defineStore('ui', {
       windowControls.exitMini(FULL_W, FULL_H);
     },
 
+    // -- browser capture popup ---------------------------------------------
+    // A grab from the browser opens a small popup (not the whole app) to
+    // confirm filename / destination / quality.
+    enterCapture(req: AddDownloadRequest) {
+      this.captureReq = req;
+      this.mode = 'capture';
+      windowControls.enterCapture(CAP_W, CAP_H);
+    },
+    // Confirmed → drop to the mini progress popup.
+    captureDone() {
+      this.captureReq = null;
+      this.mode = 'mini';
+      windowControls.enterMini(MINI_W, MINI_H);
+    },
+    // Dismissed → back to the tray; reset to full for the next normal open.
+    captureCancel() {
+      this.captureReq = null;
+      this.mode = 'full';
+      windowControls.hide();
+      windowControls.resetFull(FULL_W, FULL_H);
+    },
+
     // -- page routing -------------------------------------------------------
     openSettings() {
       this.view = 'settings';
     },
     closeSettings() {
       this.view = 'downloads';
+    },
+
+    // -- browser integration setup -----------------------------------------
+    openBrowserConnect() {
+      this.browserConnect = true;
+    },
+    async closeBrowserConnect() {
+      this.browserConnect = false;
+      await integration.completeOnboarding();
     },
 
     // -- theme --------------------------------------------------------------

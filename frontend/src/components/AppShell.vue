@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useDownloadsStore } from '../stores/downloads';
 import { useUiStore } from '../stores/ui';
+import { videoTools } from '../services/videoTools';
 import type { AddDownloadRequest, VideoInfo } from '../types';
 import TitleBar from './TitleBar.vue';
 import Toolbar from './Toolbar.vue';
@@ -15,7 +16,7 @@ import VideoFormatDialog from './dialogs/VideoFormatDialog.vue';
 import PropertiesDialog from './dialogs/PropertiesDialog.vue';
 import SettingsPage from './SettingsPage.vue';
 import RemoveConfirmDialog from './dialogs/RemoveConfirmDialog.vue';
-import CapturePrompt from './dialogs/CapturePrompt.vue';
+import BrowserConnect from './BrowserConnect.vue';
 
 const store = useDownloadsStore();
 const ui = useUiStore();
@@ -30,6 +31,7 @@ const searchEl = ref<HTMLInputElement | null>(null);
 // video add flow
 const videoInfo = ref<VideoInfo | null>(null);
 const pendingReq = ref<AddDownloadRequest | null>(null);
+const probing = ref(false);
 
 const activeTitle = computed(() => {
   const c = store.activeCategory;
@@ -39,17 +41,78 @@ const activeTitle = computed(() => {
   return store.settings?.categories.find((x) => x.id === c)?.name ?? 'Downloads';
 });
 
+// yt-dlp-missing → actionable error toast (manual video adds inside the app).
+const errorMsg = ref<string | null>(null);
+const errorAction = ref<{ label: string; run: () => void } | null>(null);
+const pendingVideoRetry = ref<AddDownloadRequest | null>(null);
+let errTimer: ReturnType<typeof setTimeout> | null = null;
+
+function showError(msg: string, action?: { label: string; run: () => void }) {
+  errorMsg.value = msg;
+  errorAction.value = action ?? null;
+  if (errTimer) clearTimeout(errTimer);
+  // Errors with an action stay until the user acts or dismisses.
+  if (!action) errTimer = setTimeout(() => (errorMsg.value = null), 9000);
+}
+function dismissError() {
+  errorMsg.value = null;
+  errorAction.value = null;
+}
+
+// Download yt-dlp on demand, then retry the video that triggered the prompt.
+async function installYtDlp() {
+  errorAction.value = null;
+  errorMsg.value = 'Downloading yt-dlp… 0%';
+  videoTools.onProgress((received, total) => {
+    const pct = total > 0 ? Math.floor((received / total) * 100) : 0;
+    errorMsg.value = `Downloading yt-dlp… ${pct}%`;
+  });
+  try {
+    await videoTools.install();
+    dismissError();
+    const retry = pendingVideoRetry.value;
+    pendingVideoRetry.value = null;
+    if (retry) await onAddSubmit(retry);
+  } catch {
+    showError('Couldn’t download yt-dlp automatically. Please install it manually and add it to your PATH.');
+  }
+}
+
+function openAdd() {
+  showAdd.value = true;
+}
+function closeAdd() {
+  showAdd.value = false;
+}
+
 // -- add / video flow -------------------------------------------------------
 async function onAddSubmit(req: AddDownloadRequest) {
   if (req.kind === 'video') {
-    // probe for formats, then hand off to the picker
+    // Probe for formats, then hand off to the picker. Surface failures (the
+    // common one being yt-dlp not installed) instead of doing nothing.
     pendingReq.value = req;
-    videoInfo.value = await store.probeVideo(req.url);
     showAdd.value = false;
+    probing.value = true; // reading a video can take a few seconds — show it
+    try {
+      const info = await store.probeVideo(req.url, req.browser, req.browserProfile);
+      if (!info || !info.formats?.length) throw new Error('no formats');
+      videoInfo.value = info;
+    } catch {
+      // Most common cause: yt-dlp isn't installed. Offer a one-click install
+      // and remember the request so we can retry it automatically afterwards.
+      pendingVideoRetry.value = req;
+      pendingReq.value = null;
+      showError('Video downloads need yt-dlp — Grabify can install it for you.', {
+        label: 'Install yt-dlp (~17 MB)',
+        run: installYtDlp,
+      });
+    } finally {
+      probing.value = false;
+    }
     return;
   }
   await store.add(req);
-  showAdd.value = false;
+  closeAdd();
 }
 
 async function onVideoSelect(formatId: string) {
@@ -67,13 +130,13 @@ async function onVideoSelect(formatId: string) {
       kind: 'video',
       filename,
       category: req.category ?? 'video',
+      videoFormatId: formatId,
     });
     // attach probed formats + selection so Properties/row reflect the choice
     if (info) {
       d.video = { ...info, selectedFormatId: formatId };
       store.applyOne(d);
     }
-    await store.selectVideoFormat(d.id, formatId);
   }
   videoInfo.value = null;
   pendingReq.value = null;
@@ -110,7 +173,7 @@ function onKey(e: KeyboardEvent) {
 
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') {
     e.preventDefault();
-    showAdd.value = true;
+    openAdd();
   } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
     e.preventDefault();
     store.selectAll();
@@ -133,7 +196,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey));
 
     <template v-else>
     <Toolbar
-      @add="showAdd = true"
+      @add="openAdd"
       @settings="ui.openSettings()"
       @delete="showRemove = true"
     />
@@ -164,7 +227,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey));
           @contextmenu="onRowContext"
           @open="onOpenRow"
           @delete="showRemove = true"
-          @add="showAdd = true"
+          @add="openAdd"
         />
       </div>
     </div>
@@ -183,7 +246,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey));
       @delete="showRemove = true"
     />
 
-    <AddUrlDialog v-if="showAdd" @close="showAdd = false" @submit="onAddSubmit" />
+    <AddUrlDialog v-if="showAdd" @close="closeAdd" @submit="onAddSubmit" />
     <VideoFormatDialog
       v-if="videoInfo"
       :info="videoInfo"
@@ -192,7 +255,23 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey));
     />
     <PropertiesDialog v-if="propsId" :id="propsId" @close="propsId = null" />
     <RemoveConfirmDialog v-if="showRemove && store.hasSelection" @close="showRemove = false" />
-    <CapturePrompt v-if="store.capturePrompt" :request="store.capturePrompt" />
+    <BrowserConnect v-if="ui.browserConnect" @close="ui.closeBrowserConnect()" />
+
+    <!-- reading-a-video progress (probe can take a few seconds) -->
+    <div v-if="probing" class="probing">
+      <div class="probing-card">
+        <span class="spinner" />
+        <span>Reading video…</span>
+      </div>
+    </div>
+
+    <!-- transient error toast (e.g. video needs yt-dlp) -->
+    <div v-if="errorMsg" class="err-toast">
+      <Icon name="info" :size="16" />
+      <span class="err-msg">{{ errorMsg }}</span>
+      <button v-if="errorAction" class="err-action" @click="errorAction.run()">{{ errorAction.label }}</button>
+      <button class="err-x" @click="dismissError" aria-label="Dismiss"><Icon name="close" :size="14" /></button>
+    </div>
   </div>
 </template>
 
@@ -298,5 +377,106 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey));
   border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: var(--shadow-card);
+}
+.probing {
+  position: fixed;
+  inset: 0;
+  z-index: 350;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 9vh;
+  background: rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  animation: err-in var(--dur-slow) var(--ease-standard);
+}
+.probing-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 22px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-dialog);
+  font-size: var(--fs);
+  font-weight: 500;
+}
+.spinner {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  border: 2px solid var(--border-strong);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.err-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 46px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 560px;
+  padding: 11px 12px 11px 14px;
+  background: var(--st-error-bg);
+  border: 1px solid color-mix(in srgb, var(--st-error) 40%, transparent);
+  color: var(--text);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-menu);
+  font-size: var(--fs-sm);
+  z-index: 400;
+  cursor: default;
+  animation: err-in var(--dur-slow) var(--ease-decel);
+}
+.err-toast :deep(svg) {
+  color: var(--st-error);
+  flex: none;
+}
+.err-msg {
+  flex: 1;
+  min-width: 0;
+}
+.err-action {
+  flex: none;
+  padding: 6px 12px;
+  border: 1px solid var(--st-error);
+  border-radius: var(--radius-sm);
+  background: var(--st-error);
+  color: #fff;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.err-action:hover {
+  background: color-mix(in srgb, var(--st-error) 88%, #000);
+}
+.err-x {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+}
+.err-x:hover {
+  background: var(--bg-hover-strong);
+  color: var(--text);
+}
+@keyframes err-in {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
 }
 </style>

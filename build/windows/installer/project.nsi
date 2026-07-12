@@ -49,11 +49,15 @@ VIAddVersionKey "ProductName"     "${INFO_PRODUCTNAME}"
 ManifestDPIAware true
 
 !include "MUI.nsh"
+!include "StrFunc.nsh"
+${StrRep}
 
 !define MUI_ICON "..\icon.ico"
 !define MUI_UNICON "..\icon.ico"
 # !define MUI_WELCOMEFINISHPAGE_BITMAP "resources\leftimage.bmp" #Include this to add a bitmap on the left side of the Welcome Page. Must be a size of 164x314
 !define MUI_FINISHPAGE_NOAUTOCLOSE # Wait on the INSTFILES page so the user can take a look into the details of the installation steps
+!define MUI_FINISHPAGE_RUN "$INSTDIR\${PRODUCT_EXECUTABLE}"
+!define MUI_FINISHPAGE_RUN_TEXT "Launch Grabify and connect my browser"
 !define MUI_ABORTWARNING # This will warn the user if they exit from the installer.
 
 !insertmacro MUI_PAGE_WELCOME # Welcome to the installer page.
@@ -96,6 +100,27 @@ Section
 
     !insertmacro wails.files
 
+    # Browser integration: prebuilt by scripts/build-integration.ps1.
+    CreateDirectory "$INSTDIR\integration"
+    CreateDirectory "$INSTDIR\integration\extension"
+    SetOutPath "$INSTDIR\integration"
+    File /oname=grabby-native-host.exe "..\..\bin\grabby-native-host.exe"
+    SetOutPath "$INSTDIR\integration\extension"
+    File /r /x *.map "..\..\..\extension\dist\*.*"
+    SetOutPath "$INSTDIR"
+
+    # Chromium native messaging manifest. The fixed extension key in
+    # extension/public/manifest.json produces this stable extension ID.
+    # Chromium requires an absolute native-host path. Forward slashes keep the
+    # Windows path valid JSON without fragile backslash escaping.
+    ${StrRep} $1 "$INSTDIR\integration\grabby-native-host.exe" "\" "/"
+    FileOpen $0 "$INSTDIR\integration\com.grabby.download_manager.json" w
+    FileWrite $0 '{$\r$\n  "name": "com.grabby.download_manager",$\r$\n  "description": "Grabify browser integration",$\r$\n  "path": "$1",$\r$\n  "type": "stdio",$\r$\n  "allowed_origins": ["chrome-extension://iimckgccfcifkglbmdcghhfkdkbcbiib/"]$\r$\n}$\r$\n'
+    FileClose $0
+    WriteRegStr HKCU "Software\Google\Chrome\NativeMessagingHosts\com.grabby.download_manager" "" "$INSTDIR\integration\com.grabby.download_manager.json"
+    WriteRegStr HKCU "Software\Microsoft\Edge\NativeMessagingHosts\com.grabby.download_manager" "" "$INSTDIR\integration\com.grabby.download_manager.json"
+    WriteRegStr HKCU "Software\BraveSoftware\Brave-Browser\NativeMessagingHosts\com.grabby.download_manager" "" "$INSTDIR\integration\com.grabby.download_manager.json"
+
     CreateShortcut "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
     CreateShortCut "$DESKTOP\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
 
@@ -111,6 +136,10 @@ Section "uninstall"
     RMDir /r "$AppData\${PRODUCT_EXECUTABLE}" # Remove the WebView2 DataPath
 
     RMDir /r $INSTDIR
+
+    DeleteRegKey HKCU "Software\Google\Chrome\NativeMessagingHosts\com.grabby.download_manager"
+    DeleteRegKey HKCU "Software\Microsoft\Edge\NativeMessagingHosts\com.grabby.download_manager"
+    DeleteRegKey HKCU "Software\BraveSoftware\Brave-Browser\NativeMessagingHosts\com.grabby.download_manager"
 
     Delete "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk"
     Delete "$DESKTOP\${INFO_PRODUCTNAME}.lnk"

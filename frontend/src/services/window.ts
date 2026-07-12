@@ -85,4 +85,29 @@ export const windowControls = {
     r.WindowSetSize?.(w, h);
     r.WindowCenter?.();
   },
+
+  /**
+   * Show a small, centred, always-on-top capture popup (for browser grabs).
+   * Sizes the window down before showing so the full app never flashes.
+   */
+  enterCapture(w: number, h: number): void {
+    const r = rt();
+    if (!r) return;
+    r.WindowSetMinSize?.(w, h);
+    r.WindowSetSize?.(w, h);
+    r.WindowSetAlwaysOnTop?.(true);
+    r.WindowCenter?.();
+    r.WindowShow?.();
+    r.WindowUnminimise?.();
+  },
+
+  /** Reset window to full dimensions without showing it (used before hiding). */
+  resetFull(w: number, h: number): void {
+    const r = rt();
+    if (!r) return;
+    r.WindowSetAlwaysOnTop?.(false);
+    r.WindowSetMinSize?.(FULL_MIN_W, FULL_MIN_H);
+    r.WindowSetSize?.(w, h);
+    r.WindowCenter?.();
+  },
 };
