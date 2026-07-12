@@ -314,6 +314,8 @@ export class MockDownloadService implements DownloadService {
     for (const [id, d] of this.downloads) if (!next.has(id)) next.set(id, d);
     this.downloads = next;
   }
+  async moveToQueue(ids: string[], queueId: string): Promise<void> { for (const id of ids) { const d=this.downloads.get(id);if(d)d.queueId=queueId; } }
+  async setQueueRunning(queueId: string, running: boolean): Promise<void> { const q=this.settings.queues.find((x)=>x.id===queueId);if(q)q.running=running; }
 
   // -- limits ---------------------------------------------------------------
 
@@ -394,6 +396,7 @@ export class MockDownloadService implements DownloadService {
   async updateSettings(settings: Settings): Promise<void> {
     this.settings = JSON.parse(JSON.stringify(settings));
   }
+  async resetSettings(): Promise<Settings> { this.settings=JSON.parse(JSON.stringify(DEFAULT_SETTINGS));return this.getSettings(); }
 
   // -- events ---------------------------------------------------------------
 
@@ -411,6 +414,8 @@ export class MockDownloadService implements DownloadService {
     this.addedCbs.add(cb);
     return () => this.addedCbs.delete(cb);
   }
+  onRemoved(_cb: (id: string) => void): Unsubscribe { return () => {}; }
+  onCompletionRequested(_cb: (d: Download) => void): Unsubscribe { return () => {}; }
 
   onCapturePrompt(cb: CaptureCb): Unsubscribe {
     this.captureCbs.add(cb);

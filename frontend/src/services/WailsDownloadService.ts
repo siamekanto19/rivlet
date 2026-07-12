@@ -15,6 +15,8 @@ export class WailsDownloadService implements DownloadService {
   remove = (id: string, del: boolean) => App.Remove(id, del);
   retry = (id: string) => App.Retry(id);
   reorder = (ids: string[]) => App.Reorder(ids);
+  moveToQueue = (ids: string[], queueId: string) => App.MoveToQueue(ids, queueId);
+  setQueueRunning = (queueId: string, running: boolean) => App.SetQueueRunning(queueId, running);
   setGlobalSpeedLimit = (bps: number | null) => App.SetGlobalSpeedLimit(bps as never);
   setDownloadSpeedLimit = (id: string, bps: number | null) => App.SetDownloadSpeedLimit(id, bps as never);
   probeVideo = (url: string, browser?: 'chrome' | 'edge', browserProfile?: string) => App.ProbeVideo(url, browser ?? '', browserProfile ?? '') as Promise<VideoInfo>;
@@ -25,9 +27,12 @@ export class WailsDownloadService implements DownloadService {
   openFolder = (id: string) => App.OpenFolder(id);
   copyUrl = (id: string) => App.CopyUrl(id);
   updateSettings = (settings: Settings) => App.UpdateSettings(settings as never);
+  resetSettings = () => App.ResetSettings() as Promise<Settings>;
   onProgress(cb: (updates: Download[]) => void) { return EventsOn('progress', cb); }
   onStateChange(cb: (d: Download) => void) { return EventsOn('stateChange', cb); }
   onAdded(cb: (d: Download) => void) { return EventsOn('added', cb); }
+  onRemoved(cb: (id: string) => void) { return EventsOn('removed', cb); }
+  onCompletionRequested(cb: (d: Download) => void) { return EventsOn('completionRequested', cb); }
   onCapturePrompt(cb: (r: AddDownloadRequest) => void) { return EventsOn('capturePrompt', cb); }
 }
 

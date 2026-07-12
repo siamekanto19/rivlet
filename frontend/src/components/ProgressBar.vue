@@ -24,10 +24,11 @@ const segs = computed(() => {
 const pct = computed(() => Math.max(0, Math.min(100, d.value.progressPct)));
 
 const stateClass = computed(() => `s-${d.value.state}`);
+const stageLabel=computed(()=>{if(d.value.kind!=='video')return '';switch(d.value.processingStage){case'merging':return'Merging';case'processing':return'Processing';case'verifying':return'Verifying';default:return''}});
 </script>
 
 <template>
-  <div class="pbar" :class="stateClass" :title="indeterminate ? 'Downloading (size unknown)' : pct.toFixed(0) + '%'">
+  <div class="pbar" :class="stateClass" :title="stageLabel || (indeterminate ? 'Downloading (size unknown)' : pct.toFixed(0) + '%')">
     <!-- segmented view when segments exist and download is in flight -->
     <template v-if="segs.length && !indeterminate">
       <div class="seg-track">
@@ -49,7 +50,7 @@ const stateClass = computed(() => `s-${d.value.state}`);
       </div>
     </template>
 
-    <span class="pct tnum">{{ indeterminate ? '' : Math.floor(pct) + '%' }}</span>
+    <span class="pct tnum" :class="{stage:stageLabel}">{{ stageLabel || (indeterminate ? '' : Math.floor(pct) + '%') }}</span>
   </div>
 </template>
 
@@ -147,6 +148,7 @@ const stateClass = computed(() => `s-${d.value.state}`);
   pointer-events: none;
   font-variant-numeric: tabular-nums;
 }
+.pct.stage{min-width:62px;color:var(--accent-text)}
 .s-completed .pct {
   color: var(--st-completed);
 }

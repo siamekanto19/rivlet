@@ -10,6 +10,7 @@ export type FileType =
   | 'video'
   | 'image'
   | 'app'
+  | 'document'
   | 'torrent'
   | 'file';
 
@@ -28,6 +29,8 @@ const EXT_MAP: Record<string, FileType> = {
   svg: 'image', bmp: 'image', avif: 'image',
   // installers / executables
   exe: 'app', msi: 'app', msix: 'app', apk: 'app', dmg: 'app', appimage: 'app',
+  pdf: 'document', doc: 'document', docx: 'document', xls: 'document', xlsx: 'document',
+  ppt: 'document', pptx: 'document', txt: 'document', rtf: 'document', csv: 'document', epub: 'document',
 };
 
 export function fileTypeOf(d: Download): FileType {

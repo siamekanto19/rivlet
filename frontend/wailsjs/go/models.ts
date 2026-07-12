@@ -11,6 +11,13 @@ export namespace backend {
 	    videoFormatId?: string;
 	    browser?: string;
 	    browserProfile?: string;
+	    expectedSha256?: string;
+	    queueId?: string;
+	    priority?: number;
+	    authScheme?: string;
+	    authUsername?: string;
+	    authSecret?: string;
+	    rememberCredential?: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new AddRequest(source);
@@ -28,6 +35,13 @@ export namespace backend {
 	        this.videoFormatId = source["videoFormatId"];
 	        this.browser = source["browser"];
 	        this.browserProfile = source["browserProfile"];
+	        this.expectedSha256 = source["expectedSha256"];
+	        this.queueId = source["queueId"];
+	        this.priority = source["priority"];
+	        this.authScheme = source["authScheme"];
+	        this.authUsername = source["authUsername"];
+	        this.authSecret = source["authSecret"];
+	        this.rememberCredential = source["rememberCredential"];
 	    }
 	}
 	export class Category {
@@ -71,6 +85,15 @@ export namespace backend {
 	    sizeBytes?: number;
 	    hasVideo: boolean;
 	    hasAudio: boolean;
+	    width?: number;
+	    height?: number;
+	    fps?: number;
+	    videoCodec?: string;
+	    audioCodec?: string;
+	    audioBitrateKbps?: number;
+	    hdr?: boolean;
+	    compatibility?: string;
+	    recommended?: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new VideoFormat(source);
@@ -84,6 +107,15 @@ export namespace backend {
 	        this.sizeBytes = source["sizeBytes"];
 	        this.hasVideo = source["hasVideo"];
 	        this.hasAudio = source["hasAudio"];
+	        this.width = source["width"];
+	        this.height = source["height"];
+	        this.fps = source["fps"];
+	        this.videoCodec = source["videoCodec"];
+	        this.audioCodec = source["audioCodec"];
+	        this.audioBitrateKbps = source["audioBitrateKbps"];
+	        this.hdr = source["hdr"];
+	        this.compatibility = source["compatibility"];
+	        this.recommended = source["recommended"];
 	    }
 	}
 	export class VideoInfo {
@@ -151,8 +183,19 @@ export namespace backend {
 	    speedBps: number;
 	    etaSeconds?: number;
 	    supportsResume: boolean;
+	    etag?: string;
+	    lastModified?: string;
+	    expectedSha256?: string;
+	    actualSha256?: string;
+	    httpVersion?: string;
+	    dnsMillis?: number;
+	    tlsMillis?: number;
+	    ttfbMillis?: number;
+	    reusedConnections?: number;
+	    newConnections?: number;
 	    state: string;
 	    error?: string;
+	    errorCategory?: string;
 	    dateAdded: string;
 	    dateCompleted?: string;
 	    segments?: SegmentProgress[];
@@ -163,6 +206,12 @@ export namespace backend {
 	    videoFormatId?: string;
 	    browserProfile?: string;
 	    browser?: string;
+	    queueId?: string;
+	    priority?: number;
+	    authScheme?: string;
+	    authUsername?: string;
+	    credentialTarget?: string;
+	    processingStage?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Download(source);
@@ -182,8 +231,19 @@ export namespace backend {
 	        this.speedBps = source["speedBps"];
 	        this.etaSeconds = source["etaSeconds"];
 	        this.supportsResume = source["supportsResume"];
+	        this.etag = source["etag"];
+	        this.lastModified = source["lastModified"];
+	        this.expectedSha256 = source["expectedSha256"];
+	        this.actualSha256 = source["actualSha256"];
+	        this.httpVersion = source["httpVersion"];
+	        this.dnsMillis = source["dnsMillis"];
+	        this.tlsMillis = source["tlsMillis"];
+	        this.ttfbMillis = source["ttfbMillis"];
+	        this.reusedConnections = source["reusedConnections"];
+	        this.newConnections = source["newConnections"];
 	        this.state = source["state"];
 	        this.error = source["error"];
+	        this.errorCategory = source["errorCategory"];
 	        this.dateAdded = source["dateAdded"];
 	        this.dateCompleted = source["dateCompleted"];
 	        this.segments = this.convertValues(source["segments"], SegmentProgress);
@@ -194,6 +254,12 @@ export namespace backend {
 	        this.videoFormatId = source["videoFormatId"];
 	        this.browserProfile = source["browserProfile"];
 	        this.browser = source["browser"];
+	        this.queueId = source["queueId"];
+	        this.priority = source["priority"];
+	        this.authScheme = source["authScheme"];
+	        this.authUsername = source["authUsername"];
+	        this.credentialTarget = source["credentialTarget"];
+	        this.processingStage = source["processingStage"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -214,10 +280,28 @@ export namespace backend {
 		    return a;
 		}
 	}
+	export class HostRule {
+	    host: string;
+	    maxConnections: number;
+	    forceSingleConnection: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new HostRule(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.host = source["host"];
+	        this.maxConnections = source["maxConnections"];
+	        this.forceSingleConnection = source["forceSingleConnection"];
+	    }
+	}
 	export class Schedule {
 	    enabled: boolean;
 	    startHHmm: string;
 	    stopHHmm: string;
+	    weekdays?: number[];
+	    repeat?: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new Schedule(source);
@@ -228,8 +312,55 @@ export namespace backend {
 	        this.enabled = source["enabled"];
 	        this.startHHmm = source["startHHmm"];
 	        this.stopHHmm = source["stopHHmm"];
+	        this.weekdays = source["weekdays"];
+	        this.repeat = source["repeat"];
 	    }
 	}
+	export class Queue {
+	    id: string;
+	    name: string;
+	    priority: number;
+	    maxConcurrent: number;
+	    running: boolean;
+	    speedLimitBps?: number;
+	    schedule?: Schedule;
+	    completionAction?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Queue(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.priority = source["priority"];
+	        this.maxConcurrent = source["maxConcurrent"];
+	        this.running = source["running"];
+	        this.speedLimitBps = source["speedLimitBps"];
+	        this.schedule = this.convertValues(source["schedule"], Schedule);
+	        this.completionAction = source["completionAction"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
 	
 	export class Settings {
 	    downloadDir: string;
@@ -262,6 +393,10 @@ export namespace backend {
 	    cookieConsent: boolean;
 	    browserOnboardingCompleted: boolean;
 	    showBrowserOnboardingOnStartup: boolean;
+	    hostRules?: HostRule[];
+	    useSystemProxy: boolean;
+	    proxyUrl?: string;
+	    queues?: Queue[];
 	
 	    static createFrom(source: any = {}) {
 	        return new Settings(source);
@@ -299,6 +434,10 @@ export namespace backend {
 	        this.cookieConsent = source["cookieConsent"];
 	        this.browserOnboardingCompleted = source["browserOnboardingCompleted"];
 	        this.showBrowserOnboardingOnStartup = source["showBrowserOnboardingOnStartup"];
+	        this.hostRules = this.convertValues(source["hostRules"], HostRule);
+	        this.useSystemProxy = source["useSystemProxy"];
+	        this.proxyUrl = source["proxyUrl"];
+	        this.queues = this.convertValues(source["queues"], Queue);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -319,8 +458,71 @@ export namespace backend {
 		    return a;
 		}
 	}
+	export class ToolStatus {
+	    name: string;
+	    installed: boolean;
+	    version?: string;
+	    path?: string;
+	    lastUpdated?: string;
+	    managed: boolean;
+	    rollbackAvailable: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new ToolStatus(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.installed = source["installed"];
+	        this.version = source["version"];
+	        this.path = source["path"];
+	        this.lastUpdated = source["lastUpdated"];
+	        this.managed = source["managed"];
+	        this.rollbackAvailable = source["rollbackAvailable"];
+	    }
+	}
 	
 	
+	
+	export class VideoToolsHealth {
+	    ytDlp: ToolStatus;
+	    ffmpeg: ToolStatus;
+	    updaterConfigured: boolean;
+	    diagnosticOk: boolean;
+	    diagnosticMessage: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new VideoToolsHealth(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.ytDlp = this.convertValues(source["ytDlp"], ToolStatus);
+	        this.ffmpeg = this.convertValues(source["ffmpeg"], ToolStatus);
+	        this.updaterConfigured = source["updaterConfigured"];
+	        this.diagnosticOk = source["diagnosticOk"];
+	        this.diagnosticMessage = source["diagnosticMessage"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 
 }
 

@@ -4,6 +4,8 @@ import (
 	"archive/zip"
 	"bufio"
 	"context"
+	"crypto/ed25519"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -14,6 +16,9 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
+
+	"idm-next/backend/updater"
 )
 
 // managedToolsDir is where Grabby downloads helper tools (yt-dlp, ffmpeg) it
@@ -70,6 +75,78 @@ func HasFFmpeg() bool {
 	_, err := findTool("ffmpeg")
 	return err == nil
 }
+
+type ToolStatus struct {
+	Name              string `json:"name"`
+	Installed         bool   `json:"installed"`
+	Version           string `json:"version,omitempty"`
+	Path              string `json:"path,omitempty"`
+	LastUpdated       string `json:"lastUpdated,omitempty"`
+	Managed           bool   `json:"managed"`
+	RollbackAvailable bool   `json:"rollbackAvailable"`
+}
+type VideoToolsHealth struct {
+	YtDlp             ToolStatus `json:"ytDlp"`
+	FFmpeg            ToolStatus `json:"ffmpeg"`
+	UpdaterConfigured bool       `json:"updaterConfigured"`
+	DiagnosticOK      bool       `json:"diagnosticOk"`
+	DiagnosticMessage string     `json:"diagnosticMessage"`
+}
+
+func toolStatus(name string) ToolStatus {
+	s := ToolStatus{Name: name}
+	path, err := findTool(name)
+	if err != nil {
+		return s
+	}
+	s.Installed = true
+	s.Path = path
+	s.Managed = strings.HasPrefix(strings.ToLower(path), strings.ToLower(managedToolsDir()))
+	if info, e := os.Stat(path); e == nil {
+		s.LastUpdated = info.ModTime().UTC().Format(time.RFC3339)
+		_, e = os.Stat(path + ".previous")
+		s.RollbackAvailable = e == nil
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	out, e := exec.CommandContext(ctx, path, "--version").CombinedOutput()
+	if e == nil {
+		s.Version = strings.TrimSpace(strings.Split(string(out), "\n")[0])
+	}
+	return s
+}
+func VideoHealth() VideoToolsHealth {
+	h := VideoToolsHealth{YtDlp: toolStatus("yt-dlp"), FFmpeg: toolStatus("ffmpeg")}
+	h.UpdaterConfigured = os.Getenv("GRABIFY_YTDLP_MANIFEST_URL") != "" && os.Getenv("GRABIFY_UPDATER_PUBLIC_KEY") != ""
+	h.DiagnosticOK = h.YtDlp.Installed && h.FFmpeg.Installed
+	if h.DiagnosticOK {
+		h.DiagnosticMessage = "Extractor and merger self-checks passed"
+	} else {
+		h.DiagnosticMessage = "Install both yt-dlp and ffmpeg to enable every video format"
+	}
+	return h
+}
+func signedUpdater() (updater.Updater, string, error) {
+	manifestURL := os.Getenv("GRABIFY_YTDLP_MANIFEST_URL")
+	raw := os.Getenv("GRABIFY_UPDATER_PUBLIC_KEY")
+	key, err := base64.StdEncoding.DecodeString(raw)
+	if manifestURL == "" || err != nil || len(key) != ed25519.PublicKeySize {
+		return updater.Updater{}, "", errors.New("signed updater is not configured in this build")
+	}
+	return updater.Updater{PublicKey: ed25519.PublicKey(key)}, manifestURL, nil
+}
+func UpdateYtDlpSigned(ctx context.Context) error {
+	u, url, err := signedUpdater()
+	if err != nil {
+		return err
+	}
+	manifest, err := u.FetchManifest(ctx, url)
+	if err != nil {
+		return err
+	}
+	return u.Install(ctx, manifest, filepath.Join(managedToolsDir(), "yt-dlp.exe"))
+}
+func RollbackYtDlp() error { return updater.Rollback(filepath.Join(managedToolsDir(), "yt-dlp.exe")) }
 
 // ytDlpDownloadURL is the official standalone Windows build.
 const ytDlpDownloadURL = "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe"
@@ -323,6 +400,7 @@ func (m *Manager) downloadVideo(ctx context.Context, id string) error {
 	m.mu.Lock()
 	if live := m.downloads[id]; live != nil {
 		live.State = Active
+		live.ProcessingStage = "downloading"
 	}
 	m.mu.Unlock()
 	m.emitState(id)
@@ -341,6 +419,18 @@ func (m *Manager) downloadVideo(ctx context.Context, id string) error {
 		if strings.HasPrefix(line, "grabby-file:") {
 			produced = strings.TrimSpace(strings.TrimPrefix(line, "grabby-file:"))
 			continue
+		}
+		lower := strings.ToLower(line)
+		stage := ""
+		if strings.Contains(lower, "merger") || strings.Contains(lower, "merging formats") {
+			stage = "merging"
+		} else if strings.Contains(lower, "extractaudio") || strings.Contains(lower, "post-process") {
+			stage = "processing"
+		} else if strings.Contains(lower, "destination:") {
+			stage = "downloading"
+		}
+		if stage != "" {
+			m.setVideoStage(id, stage)
 		}
 		if strings.Contains(strings.ToLower(line), "error:") {
 			lastError = sanitizeToolError(line)
@@ -364,6 +454,7 @@ func (m *Manager) downloadVideo(ctx context.Context, id string) error {
 			}
 		}
 	}
+	m.setVideoStage(id, "verifying")
 	if produced == "" {
 		return errors.New("video downloader produced no output file")
 	}
@@ -389,6 +480,14 @@ func (m *Manager) downloadVideo(ctx context.Context, id string) error {
 		m.mu.Unlock()
 	}
 	return nil
+}
+func (m *Manager) setVideoStage(id, stage string) {
+	m.mu.Lock()
+	if d := m.downloads[id]; d != nil {
+		d.ProcessingStage = stage
+	}
+	m.mu.Unlock()
+	m.emitState(id)
 }
 
 func scanToolLines(reader io.Reader, output chan<- string, wait *sync.WaitGroup) {

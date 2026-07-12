@@ -170,4 +170,5 @@ const canResume = computed(() => store.canResume);
   color: var(--st-error);
   background: var(--st-error-bg);
 }
+@media (max-width:760px){.toolbar{padding:0 8px}.command-group .tbtn span,.utility-group .tbtn span{display:none}.command-group .tbtn,.utility-group .tbtn{width:34px;padding:0;justify-content:center}.group{padding-right:4px;margin-right:2px}}
 </style>

@@ -20,6 +20,8 @@ const filename = ref(props.initialRequest?.filename ?? '');
 const category = ref(props.initialRequest?.category ?? 'auto');
 const destination = ref(props.initialRequest?.destinationPath ?? '');
 const urlInput = ref<HTMLTextAreaElement | null>(null);
+const expectedSha256 = ref(props.initialRequest?.expectedSha256 ?? '');
+const authScheme=ref<'none'|'basic'|'bearer'>('none');const authUsername=ref('');const authSecret=ref('');const rememberCredential=ref(false);
 
 const categories = computed(() => store.settings?.categories ?? []);
 
@@ -96,6 +98,11 @@ async function submit() {
     url: urls.value[0],
     filename: filename.value.trim() || undefined,
     kind: kind.value ?? undefined,
+	expectedSha256: expectedSha256.value.trim() || undefined,
+    authScheme: authScheme.value==='none'?undefined:authScheme.value,
+    authUsername: authUsername.value.trim()||undefined,
+    authSecret: authSecret.value||undefined,
+    rememberCredential: rememberCredential.value,
     ...shared,
   };
   emit('submit', req);
@@ -142,6 +149,12 @@ async function openTorrentFile() {
         <span class="lab">Save as</span>
         <input v-model="filename" type="text" placeholder="(auto from URL)" spellcheck="false" />
       </label>
+
+      <label class="row" v-if="!multi && kind === 'http'">
+        <span class="lab">SHA-256</span>
+        <input v-model="expectedSha256" type="text" maxlength="64" placeholder="Optional integrity checksum" spellcheck="false" />
+      </label>
+      <div class="row" v-if="!multi && kind === 'http'"><span class="lab">Authentication</span><div class="auth-fields"><select v-model="authScheme"><option value="none">None</option><option value="basic">HTTP Basic</option><option value="bearer">Bearer token</option></select><template v-if="authScheme!=='none'"><input v-if="authScheme==='basic'" v-model="authUsername" autocomplete="username" placeholder="Username"/><input v-model="authSecret" type="password" autocomplete="current-password" :placeholder="authScheme==='bearer'?'Token':'Password'"/><label class="remember"><input type="checkbox" v-model="rememberCredential"/> Remember securely in Windows Credential Manager</label></template></div></div>
 
       <label class="row">
         <span class="lab">Category</span>
@@ -262,4 +275,5 @@ async function openTorrentFile() {
 .torrent-file-btn :deep(svg) {
   color: var(--ft-torrent);
 }
+.auth-fields{display:flex;flex-direction:column;gap:8px}.remember{display:flex;align-items:center;gap:7px;color:var(--text-muted);font-size:var(--fs-sm)}
 </style>

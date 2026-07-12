@@ -5,8 +5,10 @@ import (
 	"crypto/subtle"
 	"encoding/json"
 	"net"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/energye/systray"
@@ -39,7 +41,13 @@ func (a *App) startup(ctx context.Context) {
 		// A finished or failed download raises a native Windows notification.
 		if a.started && name == "stateChange" {
 			if d, ok := payload.(backend.Download); ok {
-				notifyDownload(d)
+				settings := a.manager.GetSettings()
+				if settings.NotifyOnComplete {
+					notifyDownload(d)
+				}
+				if settings.ShowCompletionDialog && d.State == backend.Completed {
+					runtime.EventsEmit(ctx, "completionRequested", d)
+				}
 			}
 		}
 	})
@@ -125,8 +133,9 @@ func (a *App) handleCapture(conn net.Conn) {
 	var add backend.AddRequest
 	switch request.Action {
 	case "health":
+		settings := a.manager.GetSettings()
 		response.OK = true
-		response.Data = map[string]any{"app": "Grabify", "ready": true}
+		response.Data = map[string]any{"app": "Grabify", "ready": true, "captureFileTypes": settings.CaptureFileTypes, "excludedSites": settings.ExcludedSites, "videoEnabled": settings.VideoDetectionEnabled, "disabledVideoSites": settings.DisabledVideoSites}
 	case "capture.link", "capture.download":
 		var payload capture.LinkPayload
 		if err := json.Unmarshal(request.Payload, &payload); err != nil {
@@ -139,6 +148,10 @@ func (a *App) handleCapture(conn net.Conn) {
 		}
 		add = backend.AddRequest{URL: payload.URL, Filename: payload.SuggestedFilename, Kind: "http", Referrer: payload.Referrer, UserAgent: payload.UserAgent, Browser: request.Source.Browser}
 		if request.Action == "capture.download" {
+			if ok, reason := captureAllowed(payload.URL, payload.SuggestedFilename, a.manager.GetSettings()); !ok {
+				response.Error = reason
+				break
+			}
 			download, err := a.manager.Add(add)
 			if err != nil {
 				response.Error = err.Error()
@@ -164,6 +177,14 @@ func (a *App) handleCapture(conn net.Conn) {
 			break
 		}
 		settings := a.manager.GetSettings()
+		if !settings.VideoDetectionEnabled {
+			response.Error = "Video detection is disabled in Grabify settings"
+			break
+		}
+		if siteExcluded(payload.PageURL, settings.DisabledVideoSites) {
+			response.Error = "Video detection is disabled for this site"
+			break
+		}
 		profile := ""
 		if settings.CookieConsent && settings.CookieBrowser == request.Source.Browser {
 			profile = settings.CookieProfile
@@ -177,6 +198,41 @@ func (a *App) handleCapture(conn net.Conn) {
 		runtime.EventsEmit(a.ctx, "capturePrompt", add)
 	}
 	_ = capture.Write(conn, response)
+}
+
+func siteExcluded(raw string, patterns []string) bool {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return false
+	}
+	host := strings.ToLower(u.Hostname())
+	for _, p := range patterns {
+		p = strings.TrimPrefix(strings.ToLower(strings.TrimSpace(p)), "*.")
+		if p != "" && (host == p || strings.HasSuffix(host, "."+p)) {
+			return true
+		}
+	}
+	return false
+}
+func captureAllowed(raw, name string, s backend.Settings) (bool, string) {
+	if siteExcluded(raw, s.ExcludedSites) {
+		return false, "This site is excluded by Grabify settings"
+	}
+	ext := strings.TrimPrefix(strings.ToLower(filepath.Ext(name)), ".")
+	if ext == "" {
+		if u, err := url.Parse(raw); err == nil {
+			ext = strings.TrimPrefix(strings.ToLower(filepath.Ext(u.Path)), ".")
+		}
+	}
+	if len(s.CaptureFileTypes) > 0 && ext != "" {
+		for _, allowed := range s.CaptureFileTypes {
+			if strings.EqualFold(strings.TrimPrefix(allowed, "."), ext) {
+				return true, ""
+			}
+		}
+		return false, "This file type is not enabled for browser capture"
+	}
+	return true, ""
 }
 
 // beforeClose is invoked for every close request routed through the Wails
@@ -236,9 +292,15 @@ func (a *App) ResumeAll()                                           { a.manager.
 func (a *App) Cancel(id string)                                     { a.manager.Cancel(id) }
 func (a *App) Remove(id string, deleteFile bool) error              { return a.manager.Remove(id, deleteFile) }
 func (a *App) Retry(id string)                                      { a.manager.Retry(id) }
-func (a *App) Reorder(ids []string) error                           { return a.manager.Reorder(ids) }
-func (a *App) SetGlobalSpeedLimit(bps *int64) error                 { return a.manager.SetGlobal(bps) }
-func (a *App) SetDownloadSpeedLimit(id string, bps *int64) error    { return a.manager.SetLimit(id, bps) }
+func (a *App) MoveToQueue(ids []string, queueID string) error {
+	return a.manager.MoveToQueue(ids, queueID)
+}
+func (a *App) SetQueueRunning(queueID string, running bool) error {
+	return a.manager.SetQueueRunning(queueID, running)
+}
+func (a *App) Reorder(ids []string) error                        { return a.manager.Reorder(ids) }
+func (a *App) SetGlobalSpeedLimit(bps *int64) error              { return a.manager.SetGlobal(bps) }
+func (a *App) SetDownloadSpeedLimit(id string, bps *int64) error { return a.manager.SetLimit(id, bps) }
 func (a *App) ProbeVideo(url, browser, profile string) (backend.VideoInfo, error) {
 	return backend.ProbeVideo(a.ctx, url, browser, profile)
 }
@@ -282,7 +344,15 @@ func (a *App) PickFolder(currentPath string) (string, error) {
 		CanCreateDirectories: true,
 	})
 }
-func (a *App) UpdateSettings(s backend.Settings) error { return a.manager.UpdateSettings(s) }
+func (a *App) UpdateSettings(s backend.Settings) error  { return a.manager.UpdateSettings(s) }
+func (a *App) ResetSettings() (backend.Settings, error) { return a.manager.ResetSettings() }
+func (a *App) ExportDiagnostics() (string, error) {
+	path, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{Title: "Export Grabify diagnostics", DefaultFilename: "grabify-diagnostics.json", Filters: []runtime.FileFilter{{DisplayName: "JSON files", Pattern: "*.json"}}})
+	if err != nil || path == "" {
+		return path, err
+	}
+	return path, a.manager.ExportDiagnostics(path)
+}
 
 // VideoToolsReady reports whether the extractor and merger are available.
 func (a *App) VideoToolsReady() bool {
@@ -303,3 +373,6 @@ func (a *App) InstallVideoTools() error {
 	})
 	return err
 }
+func (a *App) GetVideoToolsHealth() backend.VideoToolsHealth { return backend.VideoHealth() }
+func (a *App) UpdateVideoTools() error                       { return backend.UpdateYtDlpSigned(a.ctx) }
+func (a *App) RollbackVideoTools() error                     { return backend.RollbackYtDlp() }

@@ -457,3 +457,21 @@ button {
     transition-duration: 0.001ms !important;
   }
 }
+
+@media (forced-colors: active) {
+  :root {
+    --bg: Canvas; --bg-surface: Canvas; --bg-control: Canvas; --bg-toolbar: Canvas;
+    --bg-hover: Highlight; --bg-hover-strong: Highlight; --bg-selected: Highlight;
+    --text: CanvasText; --text-muted: CanvasText; --text-faint: GrayText;
+    --border: CanvasText; --border-strong: CanvasText; --border-control: ButtonText;
+    --accent: Highlight; --accent-text: HighlightText; --st-error: LinkText;
+  }
+  *, *::before, *::after { box-shadow: none !important; text-shadow: none !important; }
+  button, input, select, textarea { forced-color-adjust: auto; }
+  :focus-visible { outline: 3px solid Highlight !important; outline-offset: 2px; }
+}
+
+@media (prefers-contrast: more) {
+  :root { --border: color-mix(in srgb, var(--text) 55%, transparent); --border-strong: var(--text-muted); }
+  :focus-visible { outline-width: 3px; outline-offset: 2px; }
+}

@@ -17,6 +17,7 @@ import PropertiesDialog from './dialogs/PropertiesDialog.vue';
 import SettingsPage from './SettingsPage.vue';
 import RemoveConfirmDialog from './dialogs/RemoveConfirmDialog.vue';
 import BrowserConnect from './BrowserConnect.vue';
+import CompletionDialog from './dialogs/CompletionDialog.vue';
 
 const store = useDownloadsStore();
 const ui = useUiStore();
@@ -27,6 +28,7 @@ const showRemove = ref(false);
 const propsId = ref<string | null>(null);
 const ctxMenu = ref<{ id: string; x: number; y: number } | null>(null);
 const searchEl = ref<HTMLInputElement | null>(null);
+const fileTypeMenu=ref(false);const fileTypeFilterEl=ref<HTMLElement|null>(null);const fileTypeOptions=[{value:'all',label:'All file types'},{value:'app',label:'Programs'},{value:'archive',label:'Archives'},{value:'document',label:'Documents'},{value:'audio',label:'Music'},{value:'video',label:'Videos'},{value:'image',label:'Images'},{value:'torrent',label:'Torrents'},{value:'file',label:'Other files'}] as const;const fileTypeLabel=computed(()=>fileTypeOptions.find((x)=>x.value===store.fileTypeFilter)?.label??'All file types');function chooseFileType(value:string){store.setFileTypeFilter(value as never);fileTypeMenu.value=false}function closeFileTypeOnOutside(e:PointerEvent){if(!fileTypeFilterEl.value?.contains(e.target as Node))fileTypeMenu.value=false}
 
 // video add flow
 const videoInfo = ref<VideoInfo | null>(null);
@@ -183,8 +185,8 @@ function onKey(e: KeyboardEvent) {
   }
 }
 
-onMounted(() => document.addEventListener('keydown', onKey));
-onBeforeUnmount(() => document.removeEventListener('keydown', onKey));
+onMounted(() => {document.addEventListener('keydown', onKey);document.addEventListener('pointerdown',closeFileTypeOnOutside)});
+onBeforeUnmount(() => {document.removeEventListener('keydown', onKey);document.removeEventListener('pointerdown',closeFileTypeOnOutside)});
 </script>
 
 <template>
@@ -208,6 +210,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey));
         <span>{{ activeTitle }}</span>
         <span class="crumb-count">{{ store.visibleDownloads.length }}</span>
       </div>
+      <div class="sub-actions">
+      <div ref="fileTypeFilterEl" class="type-filter"><button class="type-trigger" :aria-expanded="fileTypeMenu" aria-haspopup="listbox" @click="fileTypeMenu=!fileTypeMenu"><Icon name="file" :size="14"/><span>{{fileTypeLabel}}</span><Icon name="chevron" :size="12"/></button><div v-if="fileTypeMenu" class="type-menu" role="listbox" aria-label="Filter by file type"><button v-for="o in fileTypeOptions" :key="o.value" role="option" :aria-selected="store.fileTypeFilter===o.value" :class="{selected:store.fileTypeFilter===o.value}" @click="chooseFileType(o.value)"><Icon v-if="store.fileTypeFilter===o.value" name="check" :size="13"/><span v-else class="option-space"/>{{o.label}}</button></div></div>
       <div class="search">
         <Icon name="search" :size="14" />
         <input
@@ -217,6 +221,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey));
           :value="store.searchQuery"
           @input="store.setSearch(($event.target as HTMLInputElement).value)"
         />
+      </div>
       </div>
     </div>
 
@@ -256,6 +261,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey));
     <PropertiesDialog v-if="propsId" :id="propsId" @close="propsId = null" />
     <RemoveConfirmDialog v-if="showRemove && store.hasSelection" @close="showRemove = false" />
     <BrowserConnect v-if="ui.browserConnect" @close="ui.closeBrowserConnect()" />
+    <CompletionDialog v-if="store.completionPrompt" :download="store.completionPrompt" />
 
     <!-- reading-a-video progress (probe can take a few seconds) -->
     <div v-if="probing" class="probing">
@@ -332,6 +338,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey));
   transition: border-color var(--dur) var(--ease-standard),
     box-shadow var(--dur) var(--ease-standard);
 }
+.sub-actions{display:flex;align-items:center;gap:8px;margin-left:auto}.type-filter{position:relative}.type-trigger{display:flex;align-items:center;gap:7px;height:32px;min-width:154px;padding:0 9px;border:1px solid var(--border-control);border-bottom-color:var(--border-control-bottom);border-radius:var(--radius-sm);background:var(--bg-control);color:var(--text-muted)}.type-trigger span{flex:1;text-align:left}.type-trigger:hover,.type-trigger[aria-expanded=true]{background:var(--bg-surface);color:var(--text)}.type-menu{position:absolute;right:0;top:36px;width:190px;padding:5px;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--bg-surface);box-shadow:var(--shadow-menu);z-index:80}.type-menu button{display:flex;align-items:center;gap:8px;width:100%;padding:7px 9px;border:0;border-radius:var(--radius-sm);background:transparent;color:var(--text);text-align:left}.type-menu button:hover{background:var(--bg-hover-strong)}.type-menu button.selected{color:var(--accent-text);font-weight:600}.option-space{width:13px}
 .search:hover {
   background: var(--bg-surface);
 }
@@ -479,4 +486,6 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey));
   from { opacity: 0; transform: translate(-50%, 8px); }
   to { opacity: 1; transform: translate(-50%, 0); }
 }
+@media (max-width:900px){.search{width:220px}.type-trigger{min-width:132px}.subbar{gap:8px}.crumb{font-size:14px}}
+@media (max-width:720px){.main :deep(.sidebar){display:none}.main{padding-left:8px}.crumb-count{display:none}.type-trigger{min-width:34px;width:34px}.type-trigger span,.type-trigger :deep(svg:last-child){display:none}.search{width:min(260px,45vw)}}
 </style>

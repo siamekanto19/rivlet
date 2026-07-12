@@ -34,7 +34,6 @@ const columns: Col[] = [
   { key: 'etaSeconds', label: 'Time left', width: '84px', align: 'right' },
   { key: 'dateAdded', label: 'Date added', width: '128px' },
 ];
-
 const gridTemplate = computed(() => columns.map((c) => c.width).join(' '));
 
 const rows = computed(() => store.visibleDownloads);
@@ -255,6 +254,7 @@ function clearDrag() {
             class="ra"
             :class="{ danger: a.danger }"
             :title="a.title"
+            :aria-label="a.title + ' for ' + d.filename"
             @click="runAction($event, d, a.key)"
           >
             <Icon :name="a.icon" :size="a.size ?? 14" />
@@ -282,6 +282,7 @@ function clearDrag() {
 
 <style scoped>
 .table {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -525,4 +526,6 @@ function clearDrag() {
 .empty-add {
   margin-top: 12px;
 }
+@media (max-width:900px){.thead,.tr{grid-template-columns:minmax(180px,3fr) 80px 105px minmax(110px,1fr) 80px!important}.thead>.th:nth-child(6),.thead>.th:nth-child(7),.tr>.td:nth-child(6),.tr>.td:nth-child(7){display:none}}
+@media (max-width:650px){.thead,.tr{grid-template-columns:minmax(170px,2fr) 100px minmax(100px,1fr)!important}.thead>.th:nth-child(2),.thead>.th:nth-child(5),.tr>.td:nth-child(2),.tr>.td:nth-child(5){display:none}}
 </style>

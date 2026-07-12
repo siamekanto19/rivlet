@@ -75,6 +75,10 @@ export const DEFAULT_SETTINGS: Settings = {
   cookieConsent: false,
   browserOnboardingCompleted: false,
   showBrowserOnboardingOnStartup: false,
+  hostRules: [],
+  useSystemProxy: true,
+  proxyUrl: '',
+  queues: [{ id:'default', name:'Downloads', priority:0, maxConcurrent:4, running:true, speedLimitBps:null, schedule:{enabled:false,startHHmm:'01:00',stopHHmm:'08:00',weekdays:[0,1,2,3,4,5,6],repeat:true} }],
 };
 
 const MB = 1024 * 1024;

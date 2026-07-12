@@ -49,7 +49,7 @@ onBeforeUnmount(() => {
       <button class="wc" @click="minimise" title="Minimize" aria-label="Minimize">
         <svg width="11" height="11" viewBox="0 0 11 11"><rect x="1.5" y="5" width="8" height="1" fill="currentColor" /></svg>
       </button>
-      <button class="wc" @click="toggleMaximise" :title="maximised ? 'Restore' : 'Maximize'" aria-label="Maximize">
+      <button class="wc" @click="toggleMaximise" :title="maximised ? 'Restore' : 'Maximize'" :aria-label="maximised ? 'Restore window' : 'Maximize window'">
         <svg v-if="!maximised" width="11" height="11" viewBox="0 0 11 11">
           <rect x="1.5" y="1.5" width="8" height="8" fill="none" stroke="currentColor" stroke-width="1" />
         </svg>

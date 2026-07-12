@@ -17,7 +17,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey));
     <div class="dialog" :style="{ width: width ?? '460px' }" role="dialog">
       <div class="titlebar">
         <span class="title">{{ title }}</span>
-        <button class="x" @click="emit('close')" title="Close">
+        <button class="x" @click="emit('close')" title="Close" aria-label="Close dialog">
           <Icon name="close" :size="16" />
         </button>
       </div>

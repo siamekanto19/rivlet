@@ -30,6 +30,10 @@ export function CopyUrl(arg1) {
   return window['go']['main']['App']['CopyUrl'](arg1);
 }
 
+export function ExportDiagnostics() {
+  return window['go']['main']['App']['ExportDiagnostics']();
+}
+
 export function GetBrowserIntegration() {
   return window['go']['main']['App']['GetBrowserIntegration']();
 }
@@ -42,12 +46,20 @@ export function GetSystemAccent() {
   return window['go']['main']['App']['GetSystemAccent']();
 }
 
+export function GetVideoToolsHealth() {
+  return window['go']['main']['App']['GetVideoToolsHealth']();
+}
+
 export function InstallVideoTools() {
   return window['go']['main']['App']['InstallVideoTools']();
 }
 
 export function ListDownloads() {
   return window['go']['main']['App']['ListDownloads']();
+}
+
+export function MoveToQueue(arg1, arg2) {
+  return window['go']['main']['App']['MoveToQueue'](arg1, arg2);
 }
 
 export function NeedsBrowserOnboarding() {
@@ -94,6 +106,10 @@ export function Reorder(arg1) {
   return window['go']['main']['App']['Reorder'](arg1);
 }
 
+export function ResetSettings() {
+  return window['go']['main']['App']['ResetSettings']();
+}
+
 export function Resume(arg1) {
   return window['go']['main']['App']['Resume'](arg1);
 }
@@ -104,6 +120,10 @@ export function ResumeAll() {
 
 export function Retry(arg1) {
   return window['go']['main']['App']['Retry'](arg1);
+}
+
+export function RollbackVideoTools() {
+  return window['go']['main']['App']['RollbackVideoTools']();
 }
 
 export function SelectVideoFormat(arg1, arg2) {
@@ -118,8 +138,16 @@ export function SetGlobalSpeedLimit(arg1) {
   return window['go']['main']['App']['SetGlobalSpeedLimit'](arg1);
 }
 
+export function SetQueueRunning(arg1, arg2) {
+  return window['go']['main']['App']['SetQueueRunning'](arg1, arg2);
+}
+
 export function UpdateSettings(arg1) {
   return window['go']['main']['App']['UpdateSettings'](arg1);
+}
+
+export function UpdateVideoTools() {
+  return window['go']['main']['App']['UpdateVideoTools']();
 }
 
 export function VideoToolsReady() {

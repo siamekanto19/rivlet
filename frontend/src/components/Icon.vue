@@ -40,7 +40,7 @@ import {
   FileCogIcon,
   ComputerIcon,
   PaintBoardIcon,
-  ArrowLeft01Icon,
+  ArrowLeft02Icon,
   Notification03Icon,
 } from '@hugeicons/core-free-icons';
 
@@ -70,7 +70,7 @@ const map: Record<string, IconData> = {
   download: Download04Icon,
   chevron: ArrowDown01Icon,
   'chevron-right': ArrowRight01Icon,
-  back: ArrowLeft01Icon,
+  back: ArrowLeft02Icon,
   monitor: ComputerIcon,
   appearance: PaintBoardIcon,
   notification: Notification03Icon,
@@ -89,6 +89,7 @@ const map: Record<string, IconData> = {
   'type-video': FileVideoIcon,
   'type-image': FileImageIcon,
   'type-app': FileCogIcon,
+  'type-document': File01Icon,
   'type-torrent': MagnetIcon,
 };
 

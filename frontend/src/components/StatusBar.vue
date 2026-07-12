@@ -56,13 +56,13 @@ function applyCustom() {
     </template>
 
     <div class="sep" />
-    <div class="cell">
+    <div class="cell active-count">
       <span class="st-active-dot" /> {{ activeCount }} active
     </div>
     <div class="sep" />
-    <div class="cell">{{ queuedCount }} queued</div>
+    <div class="cell queued-count">{{ queuedCount }} queued</div>
     <div class="sep" />
-    <div class="cell">{{ store.completedCount }} complete</div>
+    <div class="cell complete-count">{{ store.completedCount }} complete</div>
 
     <div class="spacer" />
 
@@ -104,8 +104,8 @@ function applyCustom() {
 .statusbar {
   display: flex;
   align-items: center;
-  height: var(--status-h);
-  padding: 0 14px;
+  height: calc(var(--status-h) + 4px);
+  padding: 0 14px 4px;
   background: var(--bg-toolbar);
   backdrop-filter: saturate(1.4) blur(20px);
   -webkit-backdrop-filter: saturate(1.4) blur(20px);
@@ -234,4 +234,5 @@ function applyCustom() {
   min-width: auto;
   padding: 3px 12px;
 }
+@media(max-width:760px){.statusbar{padding-left:6px;padding-right:6px}.complete-count,.queued-count,.statusbar>.sep{display:none}.cell.speed{min-width:auto}.limit span{display:none}.limit{width:34px;padding:0;justify-content:center}}
 </style>

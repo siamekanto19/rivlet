@@ -48,6 +48,15 @@ func detectBrowsers() []BrowserInfo {
 	return out
 }
 
+// extensionsURL is the internal address of a browser's extensions manager.
+func extensionsURL(d browserDef) string {
+	if d.id == "opera" {
+		// Opera hides its extensions manager behind a different address.
+		return "opera://extensions"
+	}
+	return d.scheme + "://extensions/"
+}
+
 func openBrowserExtensions(id string) error {
 	for _, d := range browserDefs {
 		if d.id != id {
@@ -57,13 +66,12 @@ func openBrowserExtensions(id string) error {
 		if !ok {
 			return errors.New(d.name + " is not installed")
 		}
-		// Opera hides an extensions manager behind a different URL; the others
-		// use <scheme>://extensions/.
-		url := d.scheme + "://extensions/"
-		if id == "opera" {
-			url = "opera://extensions"
-		}
-		return exec.Command(path, "--new-tab", url).Start()
+		// Pass the internal URL as a bare positional argument — no extra
+		// switches. Chromium's process-singleton forwards a clean command line
+		// to an already-running instance and opens the page in a new tab;
+		// stray unknown switches (e.g. "--new-tab", which isn't a real
+		// Chromium flag) cause the URL to be dropped on that forwarding path.
+		return exec.Command(path, extensionsURL(d)).Start()
 	}
 	return errors.New("unknown browser")
 }

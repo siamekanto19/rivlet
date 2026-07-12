@@ -29,6 +29,8 @@ export interface VideoFormat {
   sizeBytes: number | null;
   hasVideo: boolean;
   hasAudio: boolean;
+  width?: number; height?: number; fps?: number; videoCodec?: string; audioCodec?: string;
+  audioBitrateKbps?: number; hdr?: boolean; compatibility?: string; recommended?: boolean;
 }
 
 export interface VideoInfo {
@@ -60,6 +62,22 @@ export interface Download {
 
   state: DownloadState;
   error?: string | null;
+  errorCategory?: string;
+  expectedSha256?: string;
+  actualSha256?: string;
+  httpVersion?: string;
+  dnsMillis?: number;
+  tlsMillis?: number;
+  ttfbMillis?: number;
+  reusedConnections?: number;
+  newConnections?: number;
+  queueId?: string;
+  priority?: number;
+  authScheme?: 'basic' | 'bearer';
+  authUsername?: string;
+  authSecret?: string;
+  rememberCredential?: boolean;
+  processingStage?: string;
 
   dateAdded: string; // ISO
   dateCompleted?: string | null;
@@ -111,6 +129,10 @@ export interface Settings {
   cookieConsent: boolean;
   browserOnboardingCompleted: boolean;
   showBrowserOnboardingOnStartup: boolean;
+  hostRules: { host: string; maxConnections: number; forceSingleConnection: boolean }[];
+  useSystemProxy: boolean;
+  proxyUrl: string;
+  queues: { id:string;name:string;priority:number;maxConcurrent:number;running:boolean;speedLimitBps:number|null;schedule:{enabled:boolean;startHHmm:string;stopHHmm:string;weekdays?:number[];repeat?:boolean}|null;completionAction?:string }[];
 }
 
 // ---------------------------------------------------------------------------
@@ -128,6 +150,13 @@ export interface AddDownloadRequest {
   videoFormatId?: string;
   browser?: 'chrome' | 'edge';
   browserProfile?: string;
+  expectedSha256?: string;
+  queueId?: string;
+  priority?: number;
+  authScheme?: 'basic' | 'bearer';
+  authUsername?: string;
+  authSecret?: string;
+  rememberCredential?: boolean;
 }
 
 export type Unsubscribe = () => void;
@@ -147,6 +176,8 @@ export interface DownloadService {
   remove(id: string, deleteFile: boolean): Promise<void>;
   retry(id: string): Promise<void>;
   reorder(orderedIds: string[]): Promise<void>;
+  moveToQueue(ids: string[], queueId: string): Promise<void>;
+  setQueueRunning(queueId: string, running: boolean): Promise<void>;
 
   // limits
   setGlobalSpeedLimit(bps: number | null): Promise<void>;
@@ -167,10 +198,13 @@ export interface DownloadService {
 
   // settings
   updateSettings(settings: Settings): Promise<void>;
+  resetSettings(): Promise<Settings>;
 
   // events (service → UI)
   onProgress(cb: (updates: Download[]) => void): Unsubscribe; // batched, ~250ms
   onStateChange(cb: (d: Download) => void): Unsubscribe;
   onAdded(cb: (d: Download) => void): Unsubscribe; // e.g. browser/clipboard capture
+  onRemoved(cb: (id: string) => void): Unsubscribe;
+  onCompletionRequested(cb: (d: Download) => void): Unsubscribe;
   onCapturePrompt(cb: (req: AddDownloadRequest) => void): Unsubscribe; // "download this?"
 }

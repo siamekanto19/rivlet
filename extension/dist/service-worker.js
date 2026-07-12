@@ -184,7 +184,12 @@
         return;
       }
       if (message?.type === "health") {
-        sendResponse(await native("health", {}));
+        const response = await native("health", {});
+        const cfg = response.data;
+        if (response.ok && cfg) {
+          await chrome.storage.local.set({ videoEnabled: cfg.videoEnabled, disabledSites: cfg.disabledVideoSites || [], desktopCaptureFileTypes: cfg.captureFileTypes || [], desktopExcludedSites: cfg.excludedSites || [] });
+        }
+        sendResponse(response);
         return;
       }
     })().catch(async (error) => {

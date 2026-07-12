@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import Icon from './Icon.vue';
 import { integration, type BrowserIntegration } from '../services/integration';
 
@@ -8,8 +8,21 @@ const emit = defineEmits<{ (e: 'close'): void }>();
 const info = ref<BrowserIntegration | null>(null);
 const connected = ref(false);
 const copied = ref(false);
+const urlCopied = ref(false);
 const selectedBrowser = ref('');
 const setupStarted = ref(false);
+
+// The internal address of the selected browser's extensions manager. Used as a
+// paste-in fallback in case the browser blocks opening it from the command line
+// (some managed/enterprise browsers do).
+const EXT_URLS: Record<string, string> = {
+  chrome: 'chrome://extensions',
+  edge: 'edge://extensions',
+  brave: 'brave://extensions',
+  vivaldi: 'vivaldi://extensions',
+  opera: 'opera://extensions',
+};
+const extUrl = computed(() => EXT_URLS[selectedBrowser.value] ?? 'chrome://extensions');
 
 onMounted(async () => {
   info.value = await integration.get();
@@ -42,6 +55,15 @@ async function copyPath() {
     /* clipboard blocked — the path is shown on screen anyway */
   }
 }
+async function copyUrl() {
+  try {
+    await navigator.clipboard.writeText(extUrl.value);
+    urlCopied.value = true;
+    setTimeout(() => (urlCopied.value = false), 1600);
+  } catch {
+    /* clipboard blocked — the address is shown on screen anyway */
+  }
+}
 </script>
 
 <template>
@@ -53,7 +75,7 @@ async function copyPath() {
           <h2>Connect Grabify to your browser</h2>
           <p>Catch downloads straight from your browser.</p>
         </div>
-        <button class="x" @click="emit('close')" title="Close"><Icon name="close" :size="16" /></button>
+        <button class="x" @click="emit('close')" title="Close" aria-label="Close browser setup"><Icon name="close" :size="16" /></button>
       </div>
 
       <div class="body">
@@ -93,8 +115,18 @@ async function copyPath() {
         <div class="step">
           <span class="num">1</span>
           <div class="step-body">
-            <div class="step-title">Grabify opens the browser setup page and extension folder</div>
-            <div class="hint">The extension path is copied automatically.</div>
+            <div class="step-title">Open your browser's extensions page</div>
+            <div class="hint" style="margin-bottom: 7px">
+              “Connect browser” opens it for you. If it doesn't appear (some
+              managed browsers block this), paste this address into the address
+              bar and press Enter:
+            </div>
+            <div class="path-row">
+              <span class="mono path" :title="extUrl">{{ extUrl }}</span>
+              <button class="btn small" @click="copyUrl">
+                <Icon name="copy" :size="14" /> {{ urlCopied ? 'Copied' : 'Copy' }}
+              </button>
+            </div>
           </div>
         </div>
 

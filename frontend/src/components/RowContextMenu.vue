@@ -66,6 +66,7 @@ async function copyUrl() {
   if (target.value) await store.copyUrl(target.value.id);
   close();
 }
+async function moveQueue(id:string){await store.moveSelectedToQueue(id);close()}
 function properties() {
   if (target.value) emit('properties', target.value.id);
   close();
@@ -139,6 +140,13 @@ watch(() => [props.x, props.y], () => requestAnimationFrame(reposition));
 
     <button class="mi" :disabled="multi" @click="copyUrl">
       <Icon name="copy" :size="14" /> <span>Copy download URL</span>
+    </button>
+
+    <div class="mdiv" />
+
+    <div class="menu-label">Move to queue</div>
+    <button v-for="q in store.settings?.queues" :key="q.id" class="mi" @click="moveQueue(q.id)">
+      <Icon name="scheduler" :size="14" /> <span>{{ q.name }}</span>
     </button>
 
     <div class="mdiv" />
@@ -224,4 +232,5 @@ watch(() => [props.x, props.y], () => requestAnimationFrame(reposition));
   background: var(--border);
   margin: 5px 8px;
 }
+.menu-label { padding: 5px 12px 3px; color: var(--text-faint); font-size: var(--fs-xs); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
 </style>

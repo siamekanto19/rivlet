@@ -143,7 +143,7 @@ chrome.runtime.onMessage.addListener((message,sender,sendResponse)=>{
       const current:string[]=(await chrome.storage.local.get('disabledSites')).disabledSites||[];
       const next=[...new Set([...current,message.host])];await chrome.storage.local.set({disabledSites:next});sendResponse({ok:true});return;
     }
-    if(message?.type==='health'){sendResponse(await native('health',{}));return;}
+    if(message?.type==='health'){const response=await native('health',{});const cfg=response.data as Record<string,unknown>|undefined;if(response.ok&&cfg){await chrome.storage.local.set({videoEnabled:cfg.videoEnabled,disabledSites:cfg.disabledVideoSites||[],desktopCaptureFileTypes:cfg.captureFileTypes||[],desktopExcludedSites:cfg.excludedSites||[]});}sendResponse(response);return;}
   })().catch(async error=>{await notifyFailure(error instanceof Error?error.message:String(error));sendResponse({ok:false,error:String(error)});});
   return true;
 });

@@ -20,6 +20,7 @@ interface AppBridge {
   BeginBrowserSetup?: (id: string) => Promise<void>;
   NeedsBrowserOnboarding?: () => Promise<boolean>;
   CompleteBrowserOnboarding?: () => Promise<void>;
+  ExportDiagnostics?: () => Promise<string>;
 }
 interface Runtime {
   EventsOn?: (name: string, cb: (...args: unknown[]) => void) => void;
@@ -75,6 +76,7 @@ export const integration = {
   async completeOnboarding(): Promise<void> {
     await app()?.CompleteBrowserOnboarding?.();
   },
+  async exportDiagnostics(): Promise<string> { return (await app()?.ExportDiagnostics?.()) ?? ''; },
   /** Fires when the extension first connects back to Grabby. */
   onConnected(cb: (browser: string) => void): void {
     rt()?.EventsOn?.('browserConnected', (b) => cb(String(b ?? '')));

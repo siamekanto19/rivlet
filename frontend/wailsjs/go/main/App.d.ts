@@ -17,15 +17,21 @@ export function CompleteBrowserOnboarding():Promise<void>;
 
 export function CopyUrl(arg1:string):Promise<void>;
 
+export function ExportDiagnostics():Promise<string>;
+
 export function GetBrowserIntegration():Promise<main.BrowserIntegrationInfo>;
 
 export function GetSettings():Promise<backend.Settings>;
 
 export function GetSystemAccent():Promise<main.AccentPalette>;
 
+export function GetVideoToolsHealth():Promise<backend.VideoToolsHealth>;
+
 export function InstallVideoTools():Promise<void>;
 
 export function ListDownloads():Promise<Array<backend.Download>>;
+
+export function MoveToQueue(arg1:Array<string>,arg2:string):Promise<void>;
 
 export function NeedsBrowserOnboarding():Promise<boolean>;
 
@@ -49,11 +55,15 @@ export function Remove(arg1:string,arg2:boolean):Promise<void>;
 
 export function Reorder(arg1:Array<string>):Promise<void>;
 
+export function ResetSettings():Promise<backend.Settings>;
+
 export function Resume(arg1:string):Promise<void>;
 
 export function ResumeAll():Promise<void>;
 
 export function Retry(arg1:string):Promise<void>;
+
+export function RollbackVideoTools():Promise<void>;
 
 export function SelectVideoFormat(arg1:string,arg2:string):Promise<void>;
 
@@ -61,6 +71,10 @@ export function SetDownloadSpeedLimit(arg1:string,arg2:any):Promise<void>;
 
 export function SetGlobalSpeedLimit(arg1:any):Promise<void>;
 
+export function SetQueueRunning(arg1:string,arg2:boolean):Promise<void>;
+
 export function UpdateSettings(arg1:backend.Settings):Promise<void>;
+
+export function UpdateVideoTools():Promise<void>;
 
 export function VideoToolsReady():Promise<boolean>;

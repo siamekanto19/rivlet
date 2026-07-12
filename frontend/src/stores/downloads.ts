@@ -6,6 +6,7 @@ import type {
   Settings,
 } from '../types';
 import { downloadService } from '../services/WailsDownloadService';
+import { fileTypeOf, type FileType } from '../utils/fileType';
 
 export type SortKey =
   | 'filename'
@@ -28,10 +29,12 @@ interface State {
   lastAnchorId: string | null;
   activeCategory: string; // 'all' | 'unfinished' | 'finished' | <categoryId>
   searchQuery: string;
+  fileTypeFilter: 'all' | FileType;
   sortKey: SortKey;
   sortDir: SortDir;
   manualOrder: boolean; // set by drag-reorder; suspends column sorting
   capturePrompt: AddDownloadRequest | null;
+  completionPrompt: Download | null;
   ready: boolean;
 }
 
@@ -43,10 +46,12 @@ export const useDownloadsStore = defineStore('downloads', {
     lastAnchorId: null,
     activeCategory: 'all',
     searchQuery: '',
+    fileTypeFilter: 'all',
     sortKey: 'dateAdded',
     sortDir: 'desc',
     manualOrder: false,
     capturePrompt: null,
+    completionPrompt: null,
     ready: false,
   }),
 
@@ -77,6 +82,8 @@ export const useDownloadsStore = defineStore('downloads', {
           (d) => d.filename.toLowerCase().includes(q) || d.url.toLowerCase().includes(q),
         );
       }
+
+      if (s.fileTypeFilter !== 'all') rows = rows.filter((d) => fileTypeOf(d) === s.fileTypeFilter);
 
       // manual (drag) order preserves the master array order
       if (s.manualOrder) return rows;
@@ -163,6 +170,8 @@ export const useDownloadsStore = defineStore('downloads', {
       downloadService.onProgress((updates) => this.applyProgress(updates));
       downloadService.onStateChange((d) => this.applyOne(d));
       downloadService.onAdded((d) => this.applyAdded(d));
+      downloadService.onRemoved((id) => { this.downloads=this.downloads.filter((d)=>d.id!==id);this.selectedIds=this.selectedIds.filter((x)=>x!==id); });
+      downloadService.onCompletionRequested((d) => { this.completionPrompt=d; });
       downloadService.onCapturePrompt((req) => {
         this.capturePrompt = req;
       });
@@ -224,6 +233,7 @@ export const useDownloadsStore = defineStore('downloads', {
     setSearch(q: string) {
       this.searchQuery = q;
     },
+    setFileTypeFilter(value: 'all' | FileType) { this.fileTypeFilter=value;this.clearSelection(); },
     setSort(key: SortKey) {
       // clicking a column header returns to sorted mode
       if (this.manualOrder) {
@@ -296,6 +306,8 @@ export const useDownloadsStore = defineStore('downloads', {
     async reorder(orderedIds: string[]) {
       await downloadService.reorder(orderedIds);
     },
+    async moveSelectedToQueue(queueId: string) { await downloadService.moveToQueue([...this.selectedIds], queueId); for (const d of this.downloads) if (this.selectedIds.includes(d.id)) d.queueId = queueId; },
+    async setQueueRunning(queueId: string, running: boolean) { await downloadService.setQueueRunning(queueId, running); const q=this.settings?.queues.find((x)=>x.id===queueId);if(q)q.running=running; },
 
     // batch helpers that operate on the current selection
     async pauseSelected() {
@@ -337,10 +349,12 @@ export const useDownloadsStore = defineStore('downloads', {
       await downloadService.updateSettings(settings);
       this.settings = JSON.parse(JSON.stringify(settings));
     },
+    async resetSettings(){const settings=await downloadService.resetSettings();this.settings=JSON.parse(JSON.stringify(settings));return settings},
 
     dismissCapture() {
       this.capturePrompt = null;
     },
+    dismissCompletion(){this.completionPrompt=null},
     async acceptCapture(req: AddDownloadRequest) {
       await this.add(req);
       this.capturePrompt = null;
