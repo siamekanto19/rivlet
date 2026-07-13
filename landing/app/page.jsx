@@ -142,6 +142,35 @@ function PlusMark() {
   );
 }
 
+const confetti = [
+  [8, "#0b0b0c", -24, 0], [14, "#d2a954", 18, 90], [21, "#8eafc1", -18, 180],
+  [29, "#d06c55", 25, 270], [36, "#0b0b0c", -12, 45], [43, "#d2a954", 20, 135],
+  [50, "#8eafc1", -22, 225], [57, "#d06c55", 15, 315], [64, "#0b0b0c", -16, 110],
+  [71, "#d2a954", 23, 205], [78, "#8eafc1", -20, 295], [86, "#d06c55", 17, 20],
+  [92, "#0b0b0c", -25, 160],
+];
+
+function PurchaseSuccess() {
+  return (
+    <div className="purchase-success" role="status" aria-live="assertive">
+      <div className="purchase-confetti" aria-hidden="true">
+        {confetti.map(([left, color, rotation, delay], index) => (
+          <i
+            key={index}
+            style={{ "--left": `${left}%`, "--color": color, "--rotation": `${rotation}deg`, "--delay": `${delay}ms` }}
+          />
+        ))}
+      </div>
+      <div className="purchase-success-card">
+        <span className="purchase-success-check" aria-hidden="true"><CheckIcon className="h-5 w-5" /></span>
+        <p className="purchase-success-eyebrow">Payment complete</p>
+        <h2>Welcome to Rivlet Pro.</h2>
+        <p>Your lifetime license is ready. Taking you to your dashboard…</p>
+      </div>
+    </div>
+  );
+}
+
 // Renders a Free/Pro comparison cell from a boolean or a string limit.
 function PlanCell({ value, pro }) {
   if (value === true) return <CheckIcon className={`h-[15px] w-[15px] ${pro ? "text-fg" : "text-muted"}`} />;
@@ -258,6 +287,10 @@ export default function Home() {
   // Whether the signed-in user already owns Pro — so we don't offer to sell the
   // lifetime deal twice.
   const [hasPro, setHasPro] = useState(false);
+  const [purchaseComplete, setPurchaseComplete] = useState(false);
+  const redirectTimer = useRef(null);
+
+  useEffect(() => () => window.clearTimeout(redirectTimer.current), []);
 
   const fetchHasPro = useCallback(async () => {
     try {
@@ -286,13 +319,16 @@ export default function Home() {
     };
   }, [isSignedIn, fetchHasPro]);
 
-  // After a completed purchase, send the buyer to their dashboard where the
-  // license key and devices live (no email, no on-screen key here).
+  // Give the purchase a short, clear success moment before moving to the
+  // dashboard where the license key and devices live.
   function handleCompleted() {
     try {
       window.Paddle?.Checkout?.close?.();
     } catch {}
-    window.location.href = "/dashboard";
+    setPurchaseComplete(true);
+    redirectTimer.current = window.setTimeout(() => {
+      window.location.href = "/dashboard";
+    }, 2400);
   }
 
   const { ready: paddleReady } = usePaddle(handleCompleted);
@@ -329,6 +365,7 @@ export default function Home() {
 
   return (
     <>
+      {purchaseComplete && <PurchaseSuccess />}
       <nav
         id="nav"
         aria-label="Primary"

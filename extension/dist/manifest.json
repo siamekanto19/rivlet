@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Rivlet Integration",
   "description": "Send links and supported non-DRM videos to Rivlet Download Manager.",
-  "version": "1.1.0",
+  "version": "1.1.2",
   "minimum_chrome_version": "120",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwJihig3hbMiLSEonTCERRwcaP4UY83h6cjMNj428u2eCpWOXn50GlrxJPjWMyK4JYD6taNn2+DwmevVmrelWzz4PVa2SK8sOt36AKWPGlfsNznX0R1GZBI3bM9ywH26aZbmweFIG/0uBtqhpbOaRJh7zcvD6SwXytXccC9V9cR3Vgt//0QIBhvayqhxpCkFqTNxNbEPeKaQPp9QKyt045BjrGXJmQbSTp5ef4C46QbvAIu4+GOFM7OOHn5NQjr+y7Uh2l+jC8lMkaXDzB2Xs05W8uBg5lhYAtZaYJ4jw8Sho6nRzf3+pXaj3OGKPjNAnFND6xn42H8zz6eapOcrv5QIDAQAB",
   "permissions": ["contextMenus", "nativeMessaging", "storage", "notifications", "downloads", "cookies"],

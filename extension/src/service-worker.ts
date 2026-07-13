@@ -58,19 +58,64 @@ async function resolvedDownload(id:number,initial:chrome.downloads.DownloadItem)
   return current;
 }
 
+// `onCreated` runs after Chrome has already created its download item. A pause
+// is enough for large files, but small files may finish before the native host
+// replies. On a confirmed Rivlet handoff, cancel the transfer and remove any
+// completed browser-side file before clearing the entry from Downloads.
+async function discardBrowserDownload(id:number){
+  await chrome.downloads.cancel(id).catch(()=>{});
+  for(let attempt=0;attempt<4;attempt++){
+    const matches=await chrome.downloads.search({id}).catch(()=>[]);
+    const current=matches[0];
+    if(!current||current.state==='interrupted')break;
+    if(current.state==='complete'){
+      await chrome.downloads.removeFile(id).catch(()=>{});
+      break;
+    }
+    await new Promise(resolve=>setTimeout(resolve,100));
+    await chrome.downloads.cancel(id).catch(()=>{});
+  }
+  await chrome.downloads.erase({id}).catch(()=>{});
+}
+
+async function restoreBrowserDownload(item:chrome.downloads.DownloadItem){
+  const url=item.finalUrl||item.url;
+  if(!isTakeoverURL(url))return;
+  // A native failure must not turn into a lost download. This replacement item
+  // belongs to the extension, so onCreated deliberately leaves it alone.
+  await chrome.downloads.download({
+    url,
+    filename:item.filename?(item.filename.split(/[\\/]/).pop()||undefined):undefined,
+    conflictAction:'uniquify',
+    saveAs:false,
+  }).catch(()=>{});
+}
+
+async function showTakeover(item:chrome.downloads.DownloadItem,suggestedFilename:string){
+  const filename=suggestedFilename||'this file';
+  // DownloadItem does not expose a source tab in Chromium's public API. The
+  // active tab is the best available surface for an immediate handoff cue.
+  const [active]=await chrome.tabs.query({active:true,lastFocusedWindow:true}).catch(()=>[]);
+  if(active?.id&&await chrome.tabs.sendMessage(active.id,{type:'rivlet.download.captured',filename}).then(()=>true).catch(()=>false))return;
+  await chrome.notifications.create({type:'basic',iconUrl:'icons/icon-128.png',title:'Downloading with Rivlet',message:`Rivlet is now downloading ${filename}.`});
+}
+
 async function grabDownload(item:chrome.downloads.DownloadItem){
   if(item.byExtensionId===chrome.runtime.id)return;
   const cfg=await chrome.storage.local.get(['captureDownloads']);
   if(cfg.captureDownloads===false)return;
-  // Stop Chrome at the earliest downloads API event. Otherwise a small file
-  // can finish while the native host is still starting.
-  let pausedByRivlet=false;
-  try{await chrome.downloads.pause(item.id);pausedByRivlet=true;}catch{/* already complete or not pausable */}
+  const original=item;
+  const initialURL=item.finalUrl||item.url;
+  if(!isTakeoverURL(initialURL))return; // skip blob:, data:, file:
+  // Cancel, rather than pause, at the first observable browser event. A pause
+  // still leaves a race where a small response finishes before Rivlet accepts
+  // it. On failure we create a clean browser replacement below.
+  await chrome.downloads.cancel(item.id).catch(()=>{});
   item=await resolvedDownload(item.id,item);
-  const url=item.finalUrl||item.url;
+  const url=item.finalUrl||item.url||initialURL;
   if(!isTakeoverURL(url)){
-    if(pausedByRivlet)await chrome.downloads.resume(item.id).catch(()=>{});
-    return; // skip blob:, data:, file:
+    await restoreBrowserDownload(original);
+    return;
   }
   try{
     // Automatic browser takeover intentionally captures every HTTP(S) file.
@@ -81,10 +126,10 @@ async function grabDownload(item:chrome.downloads.DownloadItem){
   try{
     const response=await native('capture.download',{url,pageUrl:item.referrer,referrer:item.referrer,suggestedFilename:suggested,userAgent:navigator.userAgent,cookieHeader});
     if(!response.ok)throw new Error(response.error||'Rivlet rejected the download');
-    try{await chrome.downloads.cancel(item.id);}catch{/* may already be finished */}
-    try{await chrome.downloads.erase({id:item.id});}catch{/* ignore */}
+    await discardBrowserDownload(item.id);
+    await showTakeover(item,suggested);
   }catch(error){
-    if(pausedByRivlet)await chrome.downloads.resume(item.id).catch(()=>{});
+    await restoreBrowserDownload(original);
     await notifyFailure(error instanceof Error?error.message:String(error));
   }
 }

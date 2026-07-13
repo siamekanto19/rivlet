@@ -1,5 +1,14 @@
 type VideoInfo={pageUrl:string;title:string;posterUrl:string;duration:number;drmDetected:boolean;userAgent:string;candidates:Array<{url:string;kind?:string}>};
 const drm=new WeakSet<HTMLMediaElement>();const prompted=new Set<string>();let cleanup:(()=>void)|null=null;
+let takeoverHost:HTMLElement|null=null;let takeoverTimer:number|undefined;
+
+function showTakeoverNotice(filename:string){
+  takeoverHost?.remove();if(takeoverTimer)window.clearTimeout(takeoverTimer);
+  const host=document.createElement('div');takeoverHost=host;host.style.all='initial';document.documentElement.append(host);const shadow=host.attachShadow({mode:'closed'});
+  shadow.innerHTML=`<style>:host{all:initial}.notice{position:fixed;right:26px;bottom:26px;z-index:2147483647;display:flex;align-items:center;gap:12px;padding:11px 15px 11px 11px;border:1px solid rgba(255,255,255,.18);border-radius:16px;background:rgba(18,18,19,.96);box-shadow:0 18px 52px rgba(0,0,0,.38);color:#fff;font:13px "Segoe UI",sans-serif;animation:in .38s cubic-bezier(.16,1,.3,1) both}.orb{display:grid;width:36px;height:36px;place-items:center;border-radius:50%;background:#fff;color:#111;animation:travel 1.45s cubic-bezier(.16,.8,.28,1) .18s both}.orb svg{width:18px;height:18px}.copy{min-width:0}.eyebrow{margin-bottom:2px;color:#aeb4b9;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}.name{max-width:min(280px,calc(100vw - 156px));overflow:hidden;font-weight:600;text-overflow:ellipsis;white-space:nowrap}@keyframes in{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:none}}@keyframes travel{0%{transform:translate(-14px,-44px) scale(.62);opacity:0}28%{opacity:1}74%{transform:translate(0,0) scale(1)}100%{transform:translate(0,0) scale(.94);opacity:1}}</style><div class="notice" role="status" aria-live="polite"><div class="orb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg></div><div class="copy"><div class="eyebrow">Rivlet is downloading</div><div class="name"></div></div></div>`;
+  (shadow.querySelector('.name') as HTMLElement).textContent=filename;
+  takeoverTimer=window.setTimeout(()=>{host.remove();if(takeoverHost===host)takeoverHost=null;},4200);
+}
 
 function usableSource(video:HTMLVideoElement){const raw=video.currentSrc||video.src;return raw&&!raw.startsWith('blob:')&&!raw.startsWith('data:')?raw:'';}
 function key(video:HTMLVideoElement){return `${location.href}|${usableSource(video)||video.poster||video.duration}`;}
@@ -36,6 +45,10 @@ function showPrompt(video:HTMLVideoElement,candidates:Array<{url:string;kind?:st
 }
 
 scan();new MutationObserver(records=>records.forEach(r=>r.addedNodes.forEach(n=>{if(n instanceof HTMLVideoElement)observe(n);else if(n instanceof Element)scan(n);}))).observe(document.documentElement,{subtree:true,childList:true});
+
+chrome.runtime.onMessage.addListener(message=>{
+  if(message?.type==='rivlet.download.captured')showTakeoverNotice(String(message.filename||'this file'));
+});
 
 // -- magnet / torrent capture ------------------------------------------------
 // Intercept clicks on magnet links and hand them to Rivlet instead of the

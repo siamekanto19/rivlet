@@ -84,21 +84,55 @@
     }
     return current;
   }
+  async function discardBrowserDownload(id) {
+    await chrome.downloads.cancel(id).catch(() => {
+    });
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const matches = await chrome.downloads.search({ id }).catch(() => []);
+      const current = matches[0];
+      if (!current || current.state === "interrupted") break;
+      if (current.state === "complete") {
+        await chrome.downloads.removeFile(id).catch(() => {
+        });
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      await chrome.downloads.cancel(id).catch(() => {
+      });
+    }
+    await chrome.downloads.erase({ id }).catch(() => {
+    });
+  }
+  async function restoreBrowserDownload(item) {
+    const url = item.finalUrl || item.url;
+    if (!isTakeoverURL(url)) return;
+    await chrome.downloads.download({
+      url,
+      filename: item.filename ? item.filename.split(/[\\/]/).pop() || void 0 : void 0,
+      conflictAction: "uniquify",
+      saveAs: false
+    }).catch(() => {
+    });
+  }
+  async function showTakeover(item, suggestedFilename) {
+    const filename = suggestedFilename || "this file";
+    const [active] = await chrome.tabs.query({ active: true, lastFocusedWindow: true }).catch(() => []);
+    if (active?.id && await chrome.tabs.sendMessage(active.id, { type: "rivlet.download.captured", filename }).then(() => true).catch(() => false)) return;
+    await chrome.notifications.create({ type: "basic", iconUrl: "icons/icon-128.png", title: "Downloading with Rivlet", message: `Rivlet is now downloading ${filename}.` });
+  }
   async function grabDownload(item) {
     if (item.byExtensionId === chrome.runtime.id) return;
     const cfg = await chrome.storage.local.get(["captureDownloads"]);
     if (cfg.captureDownloads === false) return;
-    let pausedByRivlet = false;
-    try {
-      await chrome.downloads.pause(item.id);
-      pausedByRivlet = true;
-    } catch {
-    }
+    const original = item;
+    const initialURL = item.finalUrl || item.url;
+    if (!isTakeoverURL(initialURL)) return;
+    await chrome.downloads.cancel(item.id).catch(() => {
+    });
     item = await resolvedDownload(item.id, item);
-    const url = item.finalUrl || item.url;
+    const url = item.finalUrl || item.url || initialURL;
     if (!isTakeoverURL(url)) {
-      if (pausedByRivlet) await chrome.downloads.resume(item.id).catch(() => {
-      });
+      await restoreBrowserDownload(original);
       return;
     }
     try {
@@ -110,17 +144,10 @@
     try {
       const response = await native("capture.download", { url, pageUrl: item.referrer, referrer: item.referrer, suggestedFilename: suggested, userAgent: navigator.userAgent, cookieHeader });
       if (!response.ok) throw new Error(response.error || "Rivlet rejected the download");
-      try {
-        await chrome.downloads.cancel(item.id);
-      } catch {
-      }
-      try {
-        await chrome.downloads.erase({ id: item.id });
-      } catch {
-      }
+      await discardBrowserDownload(item.id);
+      await showTakeover(item, suggested);
     } catch (error) {
-      if (pausedByRivlet) await chrome.downloads.resume(item.id).catch(() => {
-      });
+      await restoreBrowserDownload(original);
       await notifyFailure(error instanceof Error ? error.message : String(error));
     }
   }
