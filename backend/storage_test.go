@@ -23,7 +23,7 @@ func TestSQLiteRoundTripAndWAL(t *testing.T) {
 		t.Fatal(err)
 	}
 	m.Close()
-	if _, err = os.Stat(filepath.Join(dir, "grabify.db")); err != nil {
+	if _, err = os.Stat(filepath.Join(dir, "rivlet.db")); err != nil {
 		t.Fatal(err)
 	}
 	m2, err := NewManager(dir, nil)
@@ -75,7 +75,7 @@ func TestCorruptDatabaseRecoversFromVerifiedBackup(t *testing.T) {
 		t.Fatal(err)
 	}
 	m.Close()
-	path := filepath.Join(dir, "grabify.db")
+	path := filepath.Join(dir, "rivlet.db")
 	if err = os.WriteFile(path, []byte("not a sqlite database"), 0600); err != nil {
 		t.Fatal(err)
 	}

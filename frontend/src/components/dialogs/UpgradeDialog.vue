@@ -27,7 +27,7 @@ function later() {
 <template>
   <Modal v-if="prompt" :title="'Unlock ' + prompt.feature + ' with Pro'" width="480px" @close="later">
     <p class="lead">
-      {{ prompt.detail || (prompt.feature + ' is part of Grabify Pro.') }}
+      {{ prompt.detail || (prompt.feature + ' is part of Rivlet Pro.') }}
       A one-time purchase — no subscription, no account required.
     </p>
     <ul class="benefits">
@@ -38,7 +38,7 @@ function later() {
     </ul>
     <template #footer>
       <button class="ghost" @click="later">Maybe later</button>
-      <button class="primary" @click="buy">Get Grabify Pro</button>
+      <button class="primary" @click="buy">Get Rivlet Pro</button>
     </template>
   </Modal>
 </template>

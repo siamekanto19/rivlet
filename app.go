@@ -14,9 +14,9 @@ import (
 
 	"github.com/energye/systray"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
-	"idm-next/backend"
-	"idm-next/backend/capture"
-	"idm-next/backend/license"
+	"rivlet/backend"
+	"rivlet/backend/capture"
+	"rivlet/backend/license"
 )
 
 // App is the Wails adapter. Domain and engine logic live in backend.Manager.
@@ -36,10 +36,31 @@ type App struct {
 }
 
 func NewApp() *App { return &App{} }
+
+// migrateLegacyState keeps existing installations intact after the Rivlet
+// rebrand. Earlier builds stored downloads, browser secrets, tools and the
+// offline license under %APPDATA%/Grabby. Move that directory only when the
+// new location does not exist; a failed move simply leaves the old install
+// usable and starts Rivlet with a fresh state.
+func migrateLegacyState(configDir string) {
+	if configDir == "" {
+		return
+	}
+	newPath := filepath.Join(configDir, "Rivlet")
+	legacyPath := filepath.Join(configDir, "Grabby")
+	if _, err := os.Stat(newPath); err == nil {
+		return
+	}
+	if _, err := os.Stat(legacyPath); err == nil {
+		_ = os.Rename(legacyPath, newPath)
+	}
+}
+
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	dir, _ := os.UserConfigDir()
-	a.manager, _ = backend.NewManager(filepath.Join(dir, "Grabby"), func(name string, payload any) {
+	migrateLegacyState(dir)
+	a.manager, _ = backend.NewManager(filepath.Join(dir, "Rivlet"), func(name string, payload any) {
 		runtime.EventsEmit(ctx, name, payload)
 		// A finished or failed download raises a native Windows notification.
 		if a.started && name == "stateChange" {
@@ -57,7 +78,7 @@ func (a *App) startup(ctx context.Context) {
 	// License layer: verify any stored entitlement offline and make the download
 	// engine enforce its policy. A missing/invalid/lapsed license simply resolves
 	// to Free — the engine never blocks on this.
-	if lm, err := license.NewManager(filepath.Join(dir, "Grabby", "license.json")); err == nil {
+	if lm, err := license.NewManager(filepath.Join(dir, "Rivlet", "license.json")); err == nil {
 		a.license = lm
 		a.manager.SetEntitlementProvider(lm.Policy)
 		// If an activated device is outside its offline window, try once, quietly,
@@ -82,7 +103,7 @@ func (a *App) startup(ctx context.Context) {
 	// Point the browsers' native-messaging config at our host so the extension
 	// can reach us — works in dev too, not just via the installer.
 	registerNativeHost()
-	// System tray runs on its own message loop; keep Grabby alive when the
+	// System tray runs on its own message loop; keep Rivlet alive when the
 	// window is hidden and offer a way to restore or truly quit it.
 	go systray.Run(a.trayReady, func() {})
 }
@@ -156,7 +177,7 @@ func (a *App) handleCapture(conn net.Conn) {
 	case "health":
 		settings := a.manager.GetSettings()
 		response.OK = true
-		response.Data = map[string]any{"app": "Grabify", "ready": true, "captureFileTypes": settings.CaptureFileTypes, "excludedSites": settings.ExcludedSites, "videoEnabled": settings.VideoDetectionEnabled, "disabledVideoSites": settings.DisabledVideoSites}
+		response.Data = map[string]any{"app": "Rivlet", "ready": true, "captureFileTypes": settings.CaptureFileTypes, "excludedSites": settings.ExcludedSites, "videoEnabled": settings.VideoDetectionEnabled, "disabledVideoSites": settings.DisabledVideoSites}
 	case "capture.link", "capture.download":
 		var payload capture.LinkPayload
 		if err := json.Unmarshal(request.Payload, &payload); err != nil {
@@ -170,7 +191,7 @@ func (a *App) handleCapture(conn net.Conn) {
 		add = backend.AddRequest{URL: payload.URL, Filename: payload.SuggestedFilename, Kind: "http", Referrer: payload.Referrer, UserAgent: payload.UserAgent, Browser: request.Source.Browser, CookieHeader: payload.CookieHeader}
 		if request.Action == "capture.download" {
 			if siteExcluded(payload.URL, a.manager.GetSettings().ExcludedSites) {
-				response.Error = "This site is excluded by Grabify settings"
+				response.Error = "This site is excluded by Rivlet settings"
 				break
 			}
 			download, err := a.manager.Add(add)
@@ -199,7 +220,7 @@ func (a *App) handleCapture(conn net.Conn) {
 		}
 		settings := a.manager.GetSettings()
 		if !settings.VideoDetectionEnabled {
-			response.Error = "Video detection is disabled in Grabify settings"
+			response.Error = "Video detection is disabled in Rivlet settings"
 			break
 		}
 		if siteExcluded(payload.PageURL, settings.DisabledVideoSites) {
@@ -229,7 +250,7 @@ func (a *App) handleCapture(conn net.Conn) {
 		}
 		response.OK = true
 		response.Data = map[string]any{"downloadId": download.ID}
-		a.showWindow() // bring Grabify forward so the user sees the torrent was taken
+		a.showWindow() // bring Rivlet forward so the user sees the torrent was taken
 	}
 	if response.OK && request.Action != "health" && request.Action != "capture.download" && request.Action != "capture.torrent" {
 		// The UI shows a small capture popup and brings the window up itself
@@ -255,7 +276,7 @@ func siteExcluded(raw string, patterns []string) bool {
 }
 func captureAllowed(raw, name string, s backend.Settings) (bool, string) {
 	if siteExcluded(raw, s.ExcludedSites) {
-		return false, "This site is excluded by Grabify settings"
+		return false, "This site is excluded by Rivlet settings"
 	}
 	ext := strings.TrimPrefix(strings.ToLower(filepath.Ext(name)), ".")
 	if ext == "" {
@@ -290,8 +311,8 @@ func (a *App) beforeClose(ctx context.Context) (preventClose bool) {
 // trayReady wires up the system-tray icon and menu once its loop is running.
 func (a *App) trayReady() {
 	systray.SetIcon(trayIcon)
-	systray.SetTitle("Grabify")
-	systray.SetTooltip("Grabify — Download Manager")
+	systray.SetTitle("Rivlet")
+	systray.SetTooltip("Rivlet — Download Manager")
 
 	// Left / double click on the icon restores the window.
 	systray.SetOnClick(func(systray.IMenu) { a.showWindow() })
@@ -304,10 +325,10 @@ func (a *App) trayReady() {
 		}
 	})
 
-	mShow := systray.AddMenuItem("Show Grabify", "Restore the Grabify window")
+	mShow := systray.AddMenuItem("Show Rivlet", "Restore the Rivlet window")
 	mShow.Click(a.showWindow)
 	systray.AddSeparator()
-	mQuit := systray.AddMenuItem("Quit Grabify", "Exit the application")
+	mQuit := systray.AddMenuItem("Quit Rivlet", "Exit the application")
 	mQuit.Click(func() {
 		a.quitting = true
 		runtime.Quit(a.ctx)
@@ -389,7 +410,7 @@ func (a *App) PickFolder(currentPath string) (string, error) {
 func (a *App) UpdateSettings(s backend.Settings) error  { return a.manager.UpdateSettings(s) }
 func (a *App) ResetSettings() (backend.Settings, error) { return a.manager.ResetSettings() }
 func (a *App) ExportDiagnostics() (string, error) {
-	path, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{Title: "Export Grabify diagnostics", DefaultFilename: "grabify-diagnostics.json", Filters: []runtime.FileFilter{{DisplayName: "JSON files", Pattern: "*.json"}}})
+	path, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{Title: "Export Rivlet diagnostics", DefaultFilename: "rivlet-diagnostics.json", Filters: []runtime.FileFilter{{DisplayName: "JSON files", Pattern: "*.json"}}})
 	if err != nil || path == "" {
 		return path, err
 	}
@@ -401,7 +422,7 @@ func (a *App) VideoToolsReady() bool {
 	return backend.HasYtDlp() && backend.HasFFmpeg()
 }
 
-// InstallVideoTools downloads yt-dlp into Grabby's managed tools folder,
+// InstallVideoTools downloads yt-dlp into Rivlet's managed tools folder,
 // emitting "videoToolsProgress" events so the UI can show a progress bar.
 func (a *App) InstallVideoTools() error {
 	_, err := backend.EnsureYtDlp(a.ctx, func(received, total int64) {

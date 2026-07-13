@@ -81,7 +81,7 @@ async function deriveAesKey(pepper: string): Promise<CryptoKey> {
     {
       name: "HKDF",
       hash: "SHA-256",
-      salt: encoder.encode("grabify-license-key-v1"),
+      salt: encoder.encode("rivlet-license-key-v1"),
       info: encoder.encode("aes-gcm"),
     },
     material,
@@ -115,7 +115,7 @@ export async function decryptSecret(pepper: string, cipherB64: string): Promise<
 // Crockford base32 alphabet (no I, L, O, U) for human-friendly, unambiguous keys.
 const CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
-/** Generate a license key like GRBFY-XXXX-XXXX-XXXX from CSPRNG bytes. */
+/** Generate a customer-facing Rivlet key like RVLT-XXXX-XXXX-XXXX from CSPRNG bytes. */
 export function generateLicenseKey(): string {
   const groups: string[] = [];
   for (let g = 0; g < 3; g++) {
@@ -124,7 +124,7 @@ export function generateLicenseKey(): string {
     for (let i = 0; i < 4; i++) s += CROCKFORD[bytes[i] & 31];
     groups.push(s);
   }
-  return "GRBFY-" + groups.join("-");
+  return "RVLT-" + groups.join("-");
 }
 
 /** A random opaque id (used for license_id). */

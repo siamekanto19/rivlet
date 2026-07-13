@@ -11,11 +11,11 @@ import (
 	"testing"
 	"time"
 
-	"idm-next/backend/license"
+	"rivlet/backend/license"
 )
 
 func TestSegmentedDownloadAndJSONContract(t *testing.T) {
-	payload := []byte(strings.Repeat("idm-next-range-test-", 10000))
+	payload := []byte(strings.Repeat("rivlet-range-test-", 10000))
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Accept-Ranges", "bytes")
 		if r.Method == http.MethodHead {

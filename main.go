@@ -11,7 +11,7 @@ import (
 //go:embed all:frontend/dist
 var assets embed.FS
 
-// trayIcon is the Grabby system-tray icon (Windows .ico). Embedded so it ships
+// trayIcon is the Rivlet system-tray icon (Windows .ico). Embedded so it ships
 // inside the binary and is available the moment the tray initialises.
 //
 //go:embed build/graby_tray.ico
@@ -23,14 +23,14 @@ func main() {
 
 	// Create application with options
 	err := wails.Run(&options.App{
-		Title:     "Grabify",
+		Title:     "Rivlet",
 		Width:     1180,
 		Height:    720,
 		MinWidth:  900,
 		MinHeight: 520,
 		// Frameless so the app draws its own title bar (see TitleBar.vue).
 		Frameless: true,
-		// Closing the window hides it to the system tray and keeps Grabby
+		// Closing the window hides it to the system tray and keeps Rivlet
 		// running (native close paths, e.g. Alt+F4). The custom title-bar
 		// close button routes through runtime.Quit -> OnBeforeClose, which
 		// applies the same policy. A true quit only happens from the tray menu.

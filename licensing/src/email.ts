@@ -27,13 +27,13 @@ export async function sendLicenseKey(env: Env, to: string, licenseKey: string): 
   await send(
     env,
     to,
-    "Your Grabify Pro license key",
+    "Your Rivlet Pro license key",
     [
-      "Thanks for buying Grabify Pro!",
+      "Thanks for buying Rivlet Pro!",
       "",
       `Your license key: ${licenseKey}`,
       "",
-      "To activate: open Grabify → Settings → License, paste this key, and click Activate.",
+      "To activate: open Rivlet → Settings → License, paste this key, and click Activate.",
       "Your license covers 3 devices. You can manage them any time from the same screen.",
       "",
       "Keep this email — it's the only copy of your key.",
@@ -49,9 +49,9 @@ export async function sendRecoveryEmail(env: Env, to: string, keys: string[]): P
   await send(
     env,
     to,
-    "Your Grabify Pro license",
+    "Your Rivlet Pro license",
     keys.length > 0
-      ? "We found a Grabify Pro license for this email. If you've lost your key, reply to this email and we'll help you recover it."
-      : "No Grabify Pro license is associated with this email address.",
+      ? "We found a Rivlet Pro license for this email. If you've lost your key, reply to this email and we'll help you recover it."
+      : "No Rivlet Pro license is associated with this email address.",
   );
 }

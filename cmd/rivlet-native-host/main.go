@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"idm-next/backend/capture"
+	"rivlet/backend/capture"
 )
 
 func main() {
@@ -33,8 +33,8 @@ func forward(request capture.Envelope) capture.Response {
 	}
 	secret, err := capture.ReadSecret()
 	if err != nil {
-		if launchErr := launchGrabby(); launchErr != nil {
-			return failed(request.ID, fmt.Errorf("Grabify is not installed: %w", launchErr))
+		if launchErr := launchRivlet(); launchErr != nil {
+			return failed(request.ID, fmt.Errorf("Rivlet is not installed: %w", launchErr))
 		}
 		deadline := time.Now().Add(5 * time.Second)
 		for time.Now().Before(deadline) {
@@ -45,13 +45,13 @@ func forward(request capture.Envelope) capture.Response {
 			time.Sleep(125 * time.Millisecond)
 		}
 		if err != nil {
-			return failed(request.ID, errors.New("Grabify did not initialise browser integration"))
+			return failed(request.ID, errors.New("Rivlet did not initialise browser integration"))
 		}
 	}
 	request.Secret = secret
 	conn, err := capture.Dial(350 * time.Millisecond)
 	if err != nil {
-		if launchErr := launchGrabby(); launchErr != nil {
+		if launchErr := launchRivlet(); launchErr != nil {
 			return failed(request.ID, launchErr)
 		}
 		deadline := time.Now().Add(5 * time.Second)
@@ -64,7 +64,7 @@ func forward(request capture.Envelope) capture.Response {
 		}
 	}
 	if err != nil {
-		return failed(request.ID, fmt.Errorf("could not connect to Grabify: %w", err))
+		return failed(request.ID, fmt.Errorf("could not connect to Rivlet: %w", err))
 	}
 	defer conn.Close()
 	if err = capture.Write(conn, request); err != nil {

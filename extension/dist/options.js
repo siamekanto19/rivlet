@@ -19,7 +19,7 @@
     statusEl.textContent = "Checking native host\u2026";
     try {
       const r = await chrome.runtime.sendMessage({ type: "health" });
-      statusEl.textContent = r?.ok ? "Grabify is connected." : r?.error || "Not connected";
+      statusEl.textContent = r?.ok ? "Rivlet is connected." : r?.error || "Not connected";
       statusEl.classList.add(r?.ok ? "ok" : "error");
     } catch (e) {
       statusEl.textContent = String(e);

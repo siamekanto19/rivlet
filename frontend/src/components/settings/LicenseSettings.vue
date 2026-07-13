@@ -50,7 +50,7 @@ onMounted(() => {
   <div class="license">
     <div class="section-intro">
       <h2>License &amp; devices</h2>
-      <p>Grabify Pro is a one-time purchase. Activate this device, manage where your license is used, or recover a lost key.</p>
+      <p>Rivlet Pro is a one-time purchase. Activate this device, manage where your license is used, or recover a lost key.</p>
     </div>
 
     <!-- current plan -->
@@ -81,13 +81,13 @@ onMounted(() => {
         <li v-for="b in benefits" :key="b"><Icon name="check" :size="15" /><span>{{ b }}</span></li>
       </ul>
       <div class="actions">
-        <button class="primary" @click="license.openCheckout()">Get Grabify Pro</button>
+        <button class="primary" @click="license.openCheckout()">Get Rivlet Pro</button>
       </div>
 
       <div class="field">
         <label>Already bought? Enter your license key</label>
         <div class="row">
-          <input v-model="keyInput" placeholder="GRBFY-XXXX-XXXX-XXXX" spellcheck="false" @keyup.enter="activate" />
+          <input v-model="keyInput" placeholder="RVLT-XXXX-XXXX-XXXX" spellcheck="false" @keyup.enter="activate" />
           <button class="solid" @click="activate" :disabled="license.loading || !keyInput.trim()">
             {{ license.loading ? 'Activating…' : 'Activate' }}
           </button>
@@ -98,9 +98,9 @@ onMounted(() => {
     <!-- PRO: license details + device management -->
     <template v-else>
       <dl class="details">
-        <div><dt>Product</dt><dd>{{ status.product || 'Grabify Pro' }} · {{ status.edition || 'lifetime' }}</dd></div>
+        <div><dt>Product</dt><dd>{{ status.product || 'Rivlet Pro' }} · {{ status.edition || 'lifetime' }}</dd></div>
         <div><dt>License</dt><dd class="mono">{{ status.licenseId || '—' }}</dd></div>
-        <div><dt>Covers</dt><dd>Grabify {{ status.versionScope || '1.x' }}</dd></div>
+        <div><dt>Covers</dt><dd>Rivlet {{ status.versionScope || '1.x' }}</dd></div>
         <div><dt>Validated until</dt><dd>{{ fmtDate(status.refreshBy) }}</dd></div>
       </dl>
 
@@ -140,7 +140,7 @@ onMounted(() => {
       </div>
     </div>
 
-    <p v-if="!license.available" class="muted note">License activation runs in the Grabify desktop app.</p>
+    <p v-if="!license.available" class="muted note">License activation runs in the Rivlet desktop app.</p>
   </div>
 </template>
 

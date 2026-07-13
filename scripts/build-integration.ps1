@@ -11,5 +11,5 @@ try {
 
 $bin = Join-Path $root 'build\bin'
 New-Item -ItemType Directory -Force -Path $bin | Out-Null
-go build -trimpath -o (Join-Path $bin 'grabby-native-host.exe') ./cmd/grabby-native-host
+go build -trimpath -o (Join-Path $bin 'rivlet-native-host.exe') ./cmd/rivlet-native-host
 Write-Host "Built extension and native host in $bin"

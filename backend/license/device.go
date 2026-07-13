@@ -8,7 +8,7 @@ import (
 )
 
 // DeviceID is a random, per-install identifier generated once and stored beside
-// the license state. It is NOT derived from hardware — Grabify is privacy-first
+// the license state. It is NOT derived from hardware — Rivlet is privacy-first
 // and does no hardware fingerprinting or telemetry. The licensing backend counts
 // distinct DeviceIDs to enforce the device allowance; a reinstall that discards
 // state simply looks like a new device, which the user can reclaim via

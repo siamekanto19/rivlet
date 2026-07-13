@@ -13,7 +13,7 @@ func SecretPath() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(dir, "Grabby", "native-secret"), nil
+	return filepath.Join(dir, "Rivlet", "native-secret"), nil
 }
 
 func EnsureSecret() (string, error) {

@@ -1,12 +1,12 @@
-# Grabify Product Audit and IDM-Readiness Roadmap
+# Rivlet Product Audit and IDM-Readiness Roadmap
 
 **Audit date:** July 12, 2026  
-**Product:** Grabify for Windows  
+**Product:** Rivlet for Windows  
 **Scope:** Product strategy, interface, user experience, browser companion, download engine, video pipeline, persistence, settings, reliability, accessibility, testing, packaging, and comparison with Internet Download Manager.
 
 ## Executive verdict
 
-Grabify is a convincing product prototype with a usable core, but it should not yet be positioned as ready to compete directly with Internet Download Manager in a broad public release.
+Rivlet is a convincing product prototype with a usable core, but it should not yet be positioned as ready to compete directly with Internet Download Manager in a broad public release.
 
 The strongest parts are:
 
@@ -98,7 +98,7 @@ Useful error messages include:
 - Ctrl/Shift multi-selection.
 - Batch retry, move, pause, categorize, and remove.
 
-Microsoft recommends command bars for page-level actions and overflow handling, which fits Grabify's structure well.
+Microsoft recommends command bars for page-level actions and overflow handling, which fits Rivlet's structure well.
 
 ---
 
@@ -143,7 +143,7 @@ For batches, use a dedicated multiline editor with:
 - Remove invalid URLs.
 - Shared category and destination.
 
-Also support dragging URLs, torrent files, and local files into Grabify.
+Also support dragging URLs, torrent files, and local files into Rivlet.
 
 ---
 
@@ -255,7 +255,7 @@ Add:
 
 ## 5. Functional comparison with IDM
 
-| Capability | Grabify status | Recommendation |
+| Capability | Rivlet status | Recommendation |
 |---|---|---|
 | Browser download takeover | Working, best-effort | Harden redirects, signed URLs, and authentication |
 | Static multipart downloading | Working | Replace with dynamic segment allocation |
@@ -280,7 +280,7 @@ Add:
 | SQLite persistence | Missing | Strongly recommended before public launch |
 | Code-signed installer | Missing | Launch blocker for trust |
 
-IDM's major engine advantage is dynamic segmentation: when a connection becomes available, it divides the largest unfinished segment so that connections remain busy. Grabify currently adapts the initial number of equal ranges to file size but does not dynamically rebalance unfinished work.
+IDM's major engine advantage is dynamic segmentation: when a connection becomes available, it divides the largest unfinished segment so that connections remain busy. Rivlet currently adapts the initial number of equal ranges to file size but does not dynamically rebalance unfinished work.
 
 ---
 
@@ -316,7 +316,7 @@ Replace fixed lifetime segments with a work queue:
 6. Reduce concurrency when the host throttles or rejects ranges.
 7. Remember a per-host connection profile.
 
-Because Grabify already uses concurrent `WriteAt`, dynamic jobs can continue writing directly to their final positions. No final concatenation pass is required.
+Because Rivlet already uses concurrent `WriteAt`, dynamic jobs can continue writing directly to their final positions. No final concatenation pass is required.
 
 ### P1: Connection intelligence
 
@@ -332,7 +332,7 @@ Because Grabify already uses concurrent `WriteAt`, dynamic jobs can continue wri
 
 ## 7. Persistence and data integrity
 
-Grabify currently persists state in JSON, not SQLite.
+Rivlet currently persists state in JSON, not SQLite.
 
 For a public download manager, migrate to SQLite with:
 
@@ -529,7 +529,7 @@ The signed updater package exists in the codebase but is not connected to the ap
 9. Mirror selection.
 10. Optional Site Grabber.
 
-### Phase 3 — Grabify differentiators
+### Phase 3 — Rivlet differentiators
 
 - Automatic host-performance profiles.
 - Smart connection count based on measured throughput.
@@ -559,7 +559,7 @@ The best next milestone is a **Trust and Reliability Release** where:
 - Persistence is transactional.
 - Existing downloads can be diagnosed and recovered.
 
-After that milestone, prioritize multiple queues and dynamic segmentation. These provide the strongest movement toward IDM's real functional advantage while retaining Grabify's superior visual direction.
+After that milestone, prioritize multiple queues and dynamic segmentation. These provide the strongest movement toward IDM's real functional advantage while retaining Rivlet's superior visual direction.
 
 ---
 

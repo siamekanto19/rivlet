@@ -1,4 +1,4 @@
-// Bridge to Grabby's video-tools (yt-dlp) auto-installer on the Go side.
+// Bridge to Rivlet's video-tools (yt-dlp) auto-installer on the Go side.
 // No-ops gracefully in the browser/dev preview.
 
 interface AppBridge {

@@ -14,8 +14,10 @@ import (
 )
 
 // defaultAPIBase is the licensing backend base URL — the deployed Worker.
-// Overridable with GRABIFY_LICENSE_API (e.g. for local `wrangler dev`). Switch
-// to the custom domain (api.grabify.app) once it's mapped to the Worker.
+// Overridable with RIVLET_LICENSE_API (e.g. for local `wrangler dev`). Switch
+// to the custom domain (api.rivlet.pro) once it's mapped to the Worker.
+// Keep the existing Worker endpoint until api.rivlet.pro is connected to this
+// Cloudflare account. The public product and checkout URLs use rivlet.pro.
 const defaultAPIBase = "https://grabify-licensing.siamekanto.workers.dev"
 
 // APIError is a structured error returned by the licensing backend. Its Code is
@@ -64,7 +66,7 @@ type devicesResponse struct {
 	Devices []Device `json:"devices"`
 }
 
-// Client talks to the Grabify licensing backend.
+// Client talks to the Rivlet licensing backend.
 type Client struct {
 	baseURL string
 	http    *http.Client
@@ -73,7 +75,10 @@ type Client struct {
 // NewClient builds a client against the configured backend (env override or the
 // production default).
 func NewClient() *Client {
-	base := strings.TrimRight(strings.TrimSpace(os.Getenv("GRABIFY_LICENSE_API")), "/")
+	base := strings.TrimRight(strings.TrimSpace(os.Getenv("RIVLET_LICENSE_API")), "/")
+	if base == "" {
+		base = strings.TrimRight(strings.TrimSpace(os.Getenv("GRABIFY_LICENSE_API")), "/")
+	}
 	if base == "" {
 		base = defaultAPIBase
 	}

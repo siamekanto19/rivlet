@@ -66,7 +66,7 @@ describe("activation", () => {
   });
 
   it("rejects an unknown license key", async () => {
-    const res = await post("/v1/activate", { licenseKey: "GRBFY-0000-0000-0000", deviceId: "dev-1" });
+    const res = await post("/v1/activate", { licenseKey: "RVLT-0000-0000-0000", deviceId: "dev-1" });
     expect(res.status).toBe(404);
     expect(((await res.json()) as { error: { code: string } }).error.code).toBe("license_not_found");
   });

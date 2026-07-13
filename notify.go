@@ -7,13 +7,13 @@ import (
 	"sync"
 
 	toast "git.sr.ht/~jackmordaunt/go-toast/v2"
-	"idm-next/backend"
+	"rivlet/backend"
 )
 
 // appID is the identity Windows shows in the toast and in Action Center.
-const appID = "Grabify"
+const appID = "Rivlet"
 
-// appIconPNG is the Grabby icon, reused for toast notifications. go-toast needs
+// appIconPNG is the Rivlet icon, reused for toast notifications. go-toast needs
 // an on-disk image path, so we extract it once to a temp file.
 //
 //go:embed build/appicon.png
@@ -26,7 +26,7 @@ var (
 
 func notifyIconPath() string {
 	iconOnce.Do(func() {
-		p := filepath.Join(os.TempDir(), "grabby-icon.png")
+		p := filepath.Join(os.TempDir(), "rivlet-icon.png")
 		if err := os.WriteFile(p, appIconPNG, 0o644); err == nil {
 			iconPath = p
 		}

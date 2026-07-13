@@ -34,7 +34,7 @@ function rt(): Runtime | undefined {
 }
 
 const FALLBACK: BrowserIntegration = {
-  extensionDir: 'C:\\Program Files\\Grabify\\integration\\extension',
+  extensionDir: 'C:\\Program Files\\Rivlet\\integration\\extension',
   extensionId: 'iimckgccfcifkglbmdcghhfkdkbcbiib',
   connected: false,
   browsers: [
@@ -77,7 +77,7 @@ export const integration = {
     await app()?.CompleteBrowserOnboarding?.();
   },
   async exportDiagnostics(): Promise<string> { return (await app()?.ExportDiagnostics?.()) ?? ''; },
-  /** Fires when the extension first connects back to Grabby. */
+  /** Fires when the extension first connects back to Rivlet. */
   onConnected(cb: (browser: string) => void): void {
     rt()?.EventsOn?.('browserConnected', (b) => cb(String(b ?? '')));
   },

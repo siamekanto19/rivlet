@@ -1,6 +1,6 @@
-# Grabby Integration for Chrome and Edge
+# Rivlet Integration for Chrome and Edge
 
-1. Install Grabby or run `scripts/build-integration.ps1` from the repository.
+1. Install Rivlet or run `scripts/build-integration.ps1` from the repository.
 2. Open `chrome://extensions` or `edge://extensions`.
 3. Enable **Developer mode**.
 4. Choose **Load unpacked** and select the installed `integration/extension` directory (or this repository's `extension/dist`).

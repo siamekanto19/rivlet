@@ -16,7 +16,7 @@ const PRICE = { launch: "$9.99", regular: "$12.99" };
 const LICENSE_API = "https://grabify-licensing.siamekanto.workers.dev";
 // Public installer asset. Kept under /public so Next.js serves it as a direct
 // attachment without routing a 15 MB executable through application code.
-const DOWNLOAD_URL = "/downloads/Grabify-Setup.exe";
+const DOWNLOAD_URL = "/downloads/Rivlet-Setup.exe";
 
 const navLinks = [
   ["Features", "#features"],
@@ -68,7 +68,7 @@ const faqs = [
   {
     question: "How much does it cost?",
     answer:
-      "Grabify is free to download and use — the free tier covers everyday downloading with up to 3 downloads at once. Grabify Pro is a one-time " +
+      "Rivlet is free to download and use — the free tier covers everyday downloading with up to 3 downloads at once. Rivlet Pro is a one-time " +
       PRICE.regular +
       " (" +
       PRICE.launch +
@@ -77,22 +77,22 @@ const faqs = [
   {
     question: "Can I get a refund?",
     answer:
-      "Yes. Pro comes with a 14-day money-back guarantee, handled by our payment provider Paddle. A refund or chargeback simply returns Grabify to the free tier — your settings and queued downloads are kept.",
+      "Yes. Pro comes with a 14-day money-back guarantee, handled by our payment provider Paddle. A refund or chargeback simply returns Rivlet to the free tier — your settings and queued downloads are kept.",
   },
   {
     question: "How is it faster than my browser?",
     answer:
-      "Your browser downloads over a single connection and rarely uses all your bandwidth. Grabify opens many at once — up to 32 — and pulls a different slice of the file down each, then reassembles them. On capable servers that's dramatically faster.",
+      "Your browser downloads over a single connection and rarely uses all your bandwidth. Rivlet opens many at once — up to 32 — and pulls a different slice of the file down each, then reassembles them. On capable servers that's dramatically faster.",
   },
   {
-    question: "What is Grabify for?",
+    question: "What is Rivlet for?",
     answer:
       "Everyday files you have the right to download: app installers, disk images, drivers, game files, datasets, archives, large documents and your own media. Please respect the terms of the sites you use and applicable copyright law.",
   },
   {
     question: "Does it work with Chrome and Edge?",
     answer:
-      "Yes. Connect your browser once and Grabify captures downloads automatically as you click. Magnet links are handled too, and you can send any link from the right-click menu.",
+      "Yes. Connect your browser once and Rivlet captures downloads automatically as you click. Magnet links are handled too, and you can send any link from the right-click menu.",
   },
 ];
 
@@ -155,7 +155,7 @@ function useLandingEffects() {
 
   useEffect(() => {
     const root = document.documentElement;
-    const saved = window.localStorage.getItem("grabify-theme");
+    const saved = window.localStorage.getItem("rivlet-theme");
     if (saved === "dark" || saved === "light") {
       root.setAttribute("data-theme", saved);
       setTheme(saved);
@@ -188,7 +188,7 @@ function useLandingEffects() {
   const toggleTheme = () => {
     const next = theme === "dark" ? "light" : "dark";
     document.documentElement.setAttribute("data-theme", next);
-    window.localStorage.setItem("grabify-theme", next);
+    window.localStorage.setItem("rivlet-theme", next);
     setTheme(next);
   };
 
@@ -337,9 +337,9 @@ export default function Home() {
         }`}
       >
         <div className={`${wrap} flex items-center gap-2`}>
-          <a className="mr-auto flex items-center gap-[9px] font-sans text-[19px] font-bold tracking-[-0.02em] text-fg" href="#top" aria-label="Grabify home">
+          <a className="mr-auto flex items-center gap-[9px] font-sans text-[19px] font-bold tracking-[-0.02em] text-fg" href="#top" aria-label="Rivlet home">
             <Logo />
-            Grabify
+            Rivlet
           </a>
           <div className="hidden items-center gap-1 md:flex">
             {navLinks.map(([label, href]) => (
@@ -402,10 +402,10 @@ export default function Home() {
               The download manager, remade.
             </h1>
             <p className="mx-auto mt-[22px] max-w-[46ch] text-[clamp(1.05rem,1.5vw,1.24rem)] font-normal leading-[1.55] text-muted">
-              Grabify splits every file across many connections, so downloads finish in a fraction of the time. Fast like IDM &mdash; without the interface from 2005.
+              Rivlet splits every file across many connections, so downloads finish in a fraction of the time. Fast like IDM &mdash; without the interface from 2005.
             </p>
             <div className="mt-[34px] flex flex-wrap justify-center gap-[11px]">
-              <a href={DOWNLOAD_URL} download="Grabify-Setup.exe" className={`${buttonPrimary} px-[26px] py-[13px] text-[15.5px]`}>
+              <a href={DOWNLOAD_URL} download="Rivlet-Setup.exe" className={`${buttonPrimary} px-[26px] py-[13px] text-[15.5px]`}>
                 Download for Windows
               </a>
               <a href="#pricing" className={`${buttonGhost} px-[26px] py-[13px] text-[15.5px]`}>
@@ -425,7 +425,7 @@ export default function Home() {
                   height="1152"
                   decoding="async"
                   fetchPriority="high"
-                  alt="The Grabify app on Windows — a clean download list with progress, categories and speeds."
+                  alt="The Rivlet app on Windows — a clean download list with progress, categories and speeds."
                 />
                 <img
                   className={theme === "dark" ? "block h-auto w-full" : "hidden"}
@@ -433,7 +433,7 @@ export default function Home() {
                   width="1838"
                   height="1150"
                   decoding="async"
-                  alt="The Grabify app in dark mode."
+                  alt="The Rivlet app in dark mode."
                 />
               </div>
             </div>
@@ -443,7 +443,7 @@ export default function Home() {
         <section className={sectionPad} id="features">
           <div className={wrap}>
             <div className="reveal max-w-[640px]">
-              <span className={eyebrow}>Why Grabify</span>
+              <span className={eyebrow}>Why Rivlet</span>
               <h2 className={`${heading} mt-3.5 text-[clamp(1.9rem,3.6vw,2.7rem)]`}>Everything a download manager should be. Nothing it shouldn't.</h2>
             </div>
             <div className="reveal mt-16 grid border-t border-hair md:grid-cols-3">
@@ -468,19 +468,19 @@ export default function Home() {
             <div className="reveal max-w-[640px]">
               <span className={eyebrow}>The switch</span>
               <h2 className={`${heading} mt-3.5 text-[clamp(1.9rem,3.6vw,2.7rem)]`}>You've used IDM for 20 years. It shows.</h2>
-              <p className="mt-4 text-[1.08rem] font-normal leading-[1.6] text-muted">Grabify keeps the multi-connection speed you rely on and drops everything that makes IDM feel dated.</p>
+              <p className="mt-4 text-[1.08rem] font-normal leading-[1.6] text-muted">Rivlet keeps the multi-connection speed you rely on and drops everything that makes IDM feel dated.</p>
             </div>
             <div className="reveal mt-14 overflow-hidden rounded-xl border border-hair">
               <div className="grid grid-cols-[1.3fr_.85fr_.85fr] items-center md:grid-cols-[1.4fr_1fr_1fr]">
                 <div className="px-5 py-4 text-[13px] font-semibold uppercase tracking-[0.02em] text-muted">&nbsp;</div>
                 <div className="px-5 py-4 text-[13px] font-semibold uppercase tracking-[0.02em] text-muted">IDM</div>
-                <div className="border-l border-hair px-5 py-4 text-[13px] font-semibold uppercase tracking-[0.02em] text-fg">Grabify</div>
+                <div className="border-l border-hair px-5 py-4 text-[13px] font-semibold uppercase tracking-[0.02em] text-fg">Rivlet</div>
               </div>
-              {comparisonRows.map(([feature, idm, grabify, tone]) => (
+              {comparisonRows.map(([feature, idm, rivlet, tone]) => (
                 <div key={feature} className="grid grid-cols-[1.3fr_.85fr_.85fr] items-center border-t border-hair md:grid-cols-[1.4fr_1fr_1fr]">
                   <div className="px-5 py-4 text-[14.5px] text-muted">{feature}</div>
                   <div className={`border-l border-hair px-5 py-4 text-[14.5px] tabular-nums ${tone === "mixed" ? "text-faint" : "text-fg"}`}>{idm}</div>
-                  <div className="border-l border-hair px-5 py-4 text-[14.5px] font-medium tabular-nums text-fg">{grabify}</div>
+                  <div className="border-l border-hair px-5 py-4 text-[14.5px] font-medium tabular-nums text-fg">{rivlet}</div>
                 </div>
               ))}
             </div>
@@ -510,7 +510,7 @@ export default function Home() {
                     </li>
                   ))}
                 </ul>
-                <a href={DOWNLOAD_URL} download="Grabify-Setup.exe" className={`${buttonGhost} mt-7 px-[22px] py-[12px] text-[15px]`}>
+                <a href={DOWNLOAD_URL} download="Rivlet-Setup.exe" className={`${buttonGhost} mt-7 px-[22px] py-[12px] text-[15px]`}>
                   Download for Windows
                 </a>
               </div>
@@ -535,9 +535,9 @@ export default function Home() {
                   ))}
                 </ul>
                 <button type="button" onClick={handleGetPro} disabled={!hasPro && !paddleReady} className={`${buttonPrimary} mt-7 px-[22px] py-[12px] text-[15px] disabled:opacity-60`}>
-                  {hasPro ? "Open your dashboard" : !paddleReady ? "Loading checkout…" : isSignedIn ? "Get Grabify Pro" : "Sign up & get Pro"}
+                  {hasPro ? "Open your dashboard" : !paddleReady ? "Loading checkout…" : isSignedIn ? "Get Rivlet Pro" : "Sign up & get Pro"}
                 </button>
-                {hasPro && <p className="mt-2.5 text-center text-[13px] font-medium text-fg">✓ You already own Grabify Pro Lifetime</p>}
+                {hasPro && <p className="mt-2.5 text-center text-[13px] font-medium text-fg">✓ You already own Rivlet Pro Lifetime</p>}
               </div>
             </div>
 
@@ -566,7 +566,7 @@ export default function Home() {
             </div>
 
             <p className="reveal mx-auto mt-8 max-w-[600px] text-center text-[13px] leading-[1.6] text-faint">
-              Grabify is a general-purpose download accelerator for files you have the right to download. Please respect the terms of the sites you use and applicable copyright law.
+              Rivlet is a general-purpose download accelerator for files you have the right to download. Please respect the terms of the sites you use and applicable copyright law.
             </p>
           </div>
         </section>
@@ -595,7 +595,7 @@ export default function Home() {
           <div className={wrap}>
             <h2 className={`${heading} text-[clamp(2rem,4.4vw,3.2rem)]`}>Stop watching progress bars.</h2>
             <p className="mx-auto mb-[30px] mt-[18px] max-w-[40ch] text-[1.08rem] text-muted">The speed you loved about IDM, in an app built for Windows today.</p>
-            <a href={DOWNLOAD_URL} download="Grabify-Setup.exe" className={`${buttonPrimary} px-[26px] py-[13px] text-[15.5px]`}>
+            <a href={DOWNLOAD_URL} download="Rivlet-Setup.exe" className={`${buttonPrimary} px-[26px] py-[13px] text-[15.5px]`}>
               Download for Windows <span className="font-mono text-xs opacity-70 tabular-nums">Free</span>
             </a>
             <p className="mt-4 text-[13px] text-faint">Free to download &middot; Pro from {PRICE.launch} one-time</p>
@@ -607,21 +607,21 @@ export default function Home() {
         <div className={`${wrap} flex flex-wrap items-center justify-between gap-5 text-[13px] text-faint`}>
           <a className="flex items-center gap-[9px] font-sans text-base font-bold tracking-[-0.02em] text-muted" href="#top">
             <Logo />
-            Grabify
+            Rivlet
           </a>
           <nav className="flex flex-wrap gap-5">
             {[
               ["Features", "#features"],
               ["Pricing", "#pricing"],
               ["FAQ", "#faq"],
-              ["Contact", "mailto:hello@grabify.app"],
+              ["Contact", "mailto:hello@rivlet.pro"],
             ].map(([label, href]) => (
               <a key={href} href={href} className="text-muted hover:text-fg">
                 {label}
               </a>
             ))}
           </nav>
-          <span>&copy; 2026 Grabify &middot; Not affiliated with IDM / Tonec Inc.</span>
+          <span>&copy; 2026 Rivlet &middot; Not affiliated with IDM / Tonec Inc.</span>
         </div>
       </footer>
     </>

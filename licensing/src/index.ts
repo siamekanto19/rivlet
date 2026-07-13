@@ -48,7 +48,7 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname === "/health") {
-      return json({ ok: true, service: "grabify-licensing" });
+      return json({ ok: true, service: "rivlet-licensing" });
     }
     // CORS preflight for browser-called endpoints.
     if (request.method === "OPTIONS" && browserPaths.has(url.pathname)) {

@@ -1,4 +1,4 @@
-module idm-next
+module rivlet
 
 go 1.25.0
 

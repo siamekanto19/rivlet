@@ -1,12 +1,12 @@
-# Grabify licensing — contract & design
+# Rivlet licensing — contract & design
 
-This is the reference for Grabify's monetization system. **Track 1 (desktop
+This is the reference for Rivlet's monetization system. **Track 1 (desktop
 entitlement layer) is implemented and tested**; the Cloudflare backend (Track 2)
 must conform to the certificate format and endpoint contract defined here.
 
 ## Overview
 
-- **Grabify Pro Lifetime**, one-time purchase, sold via **Paddle** (merchant of
+- **Rivlet Pro Lifetime**, one-time purchase, sold via **Paddle** (merchant of
   record). $12.99 (launch $9.99 for the first 14 days).
 - The desktop app holds only an **Ed25519 public key** and verifies a signed
   **entitlement certificate** entirely offline. It can never mint one.
@@ -26,7 +26,7 @@ must conform to the certificate format and endpoint contract defined here.
 | License manager (ties it together) | `backend/license/manager.go` |
 | Engine enforcement (all gates) | `backend/manager.go`, `backend/video.go` |
 | Wails API surface | `license_api.go` |
-| Dev signing tool | `cmd/grabify-licgen/` |
+| Dev signing tool | `cmd/rivlet-licgen/` |
 | Vue service / store / UI | `frontend/src/services/license.ts`, `frontend/src/stores/license.ts`, `frontend/src/components/settings/LicenseSettings.vue`, `frontend/src/components/dialogs/UpgradeDialog.vue` |
 
 ## Enforcement points (enforced in Go, not the UI)
@@ -55,7 +55,7 @@ Compact JWS-style token: `base64url(header).base64url(payload).base64url(sig)`,
 `alg=EdDSA` (Ed25519), signed over `header.payload` (raw-url base64, no padding).
 The Worker MUST produce byte-identical encoding (WebCrypto `Ed25519` sign).
 
-Header: `{"alg":"EdDSA","kid":"grabify-prod-1"}`
+Header: `{"alg":"EdDSA","kid":"rivlet-prod-1"}`
 
 Payload (`Entitlement`, see `entitlement.go`):
 
@@ -63,7 +63,7 @@ Payload (`Entitlement`, see `entitlement.go`):
 {
   "v": 1,
   "licenseId": "lic_...",
-  "product": "grabify-pro-lifetime",
+  "product": "rivlet-pro-lifetime",
   "tier": "pro",
   "edition": "lifetime",
   "versionScope": "1.x",
@@ -83,7 +83,7 @@ past grace → Free.
 
 ## Backend endpoint contract (Track 2 must implement)
 
-Base URL from `GRABIFY_LICENSE_API` (default `https://api.grabify.app`). All
+Base URL from `RIVLET_LICENSE_API` (default `https://api.rivlet.app`). All
 POST, JSON. Errors: non-2xx with `{"error":{"code","message"}}`. Known codes in
 `client.go` (`device_limit_reached`, `license_not_found`, `license_revoked`,
 `device_not_found`, `rate_limited`).
@@ -103,15 +103,15 @@ activation/deactivation to guarantee the 3-device cap.
 
 ## Deployment status
 
-- **Deployed:** Worker at `https://grabify-licensing.siamekanto.workers.dev`
-  (Cloudflare account siamekanto360@gmail.com), with D1 `grabify-licensing`
+- **Deployed:** Worker at `https://rivlet-licensing.siamekanto.workers.dev`
+  (Cloudflare account siamekanto360@gmail.com), with D1 `rivlet-licensing`
   (id `1ed3f3b6-…`, schema applied) and the `LicenseDurableObject` bound.
 - **Secrets set:** `CERT_SIGNING_KEY` (production Ed25519 private, pkcs8),
   `LICENSE_KEY_PEPPER` (random). The matching public key is baked into
   `backend/license/keys.go` and `defaultAPIBase` points at the Worker.
 - **Deferred to Track 4:** `PADDLE_WEBHOOK_SECRET` (webhook returns 401 until
   set — no provisioning yet), `EMAIL_API_KEY` (key-delivery email is skipped),
-  and a custom domain (`api.grabify.app`) in front of the workers.dev URL.
+  and a custom domain (`api.rivlet.app`) in front of the workers.dev URL.
 - Verified live: `/health`, `activate` (unknown key → 404), `recover` (200),
   webhook (bad sig → 401). Full provision→activate cycle is covered by the
   workerd test suite; the prod signing key and baked public key are a matched
@@ -121,15 +121,15 @@ activation/deactivation to guarantee the 3-device cap.
 
 - **Production Ed25519 keypair** was generated during deploy: private half →
   Cloudflare Worker secret `CERT_SIGNING_KEY`; public half →
-  `productionPublicKeyB64` in `keys.go` (kid `grabify-prod-1`). Rotate by
+  `productionPublicKeyB64` in `keys.go` (kid `rivlet-prod-1`). Rotate by
   shipping a build that trusts both old and new keys, or override at build time
-  with `-ldflags "-X idm-next/backend/license.productionPublicKeyB64=..."`.
+  with `-ldflags "-X rivlet/backend/license.productionPublicKeyB64=..."`.
 - If `productionPublicKeyB64` is ever empty, the app trusts no prod key and
   stays Free-only (correct fail-closed default).
-- **Local testing today:** `go run ./cmd/grabify-licgen keygen`, set
-  `GRABIFY_LICENSE_PUBKEY=<public>` in the app's env (trusted under kid
-  `grabify-dev`), then `go run ./cmd/grabify-licgen sign -priv <private>
+- **Local testing today:** `go run ./cmd/rivlet-licgen keygen`, set
+  `RIVLET_LICENSE_PUBKEY=<public>` in the app's env (trusted under kid
+  `rivlet-dev`), then `go run ./cmd/rivlet-licgen sign -priv <private>
   -device <id from the License page>` and drop the token into
-  `%APPDATA%/Grabby/license.json` → `token`.
+  `%APPDATA%/Rivlet/license.json` → `token`.
 - Worker-only secrets (Track 2/4): Paddle API key, Paddle webhook secret, cert
   signing key, email API key, key pepper. Never in the client.

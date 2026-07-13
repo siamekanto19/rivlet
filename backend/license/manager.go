@@ -107,11 +107,11 @@ func (m *Manager) reevaluate() {
 func messageFor(h Health) string {
 	switch h {
 	case HealthGrace:
-		return "Grabify Pro is active, but couldn't reconnect to confirm your license recently. Connect to the internet to keep Pro features."
+		return "Rivlet Pro is active, but couldn't reconnect to confirm your license recently. Connect to the internet to keep Pro features."
 	case HealthExpired:
-		return "Grabify Pro couldn't be confirmed and has paused. Reconnect to the internet to restore Pro features — your settings and queue are kept."
+		return "Rivlet Pro couldn't be confirmed and has paused. Reconnect to the internet to restore Pro features — your settings and queue are kept."
 	case HealthRevoked:
-		return "This license is no longer active (it may have been refunded or disputed). Grabify has returned to the free tier."
+		return "This license is no longer active (it may have been refunded or disputed). Rivlet has returned to the free tier."
 	default:
 		return ""
 	}

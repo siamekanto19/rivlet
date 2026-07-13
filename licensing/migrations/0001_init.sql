@@ -1,4 +1,4 @@
--- Grabify licensing schema.
+-- Rivlet licensing schema.
 --
 -- License keys are NEVER stored in plaintext. Each row is keyed by
 -- key_hash = base64(HMAC-SHA256(LICENSE_KEY_PEPPER, licenseKey)); the raw key is

@@ -1,7 +1,7 @@
 "use strict";
 (() => {
   // src/protocol.ts
-  var NATIVE_HOST = "com.grabby.download_manager";
+  var NATIVE_HOST = "com.rivlet.download_manager";
   function browserName() {
     return navigator.userAgent.includes("Edg/") ? "edge" : "chrome";
   }
@@ -36,10 +36,10 @@
   }
 
   // src/service-worker.ts
-  var MENU_ID = "grabby-download-link";
+  var MENU_ID = "rivlet-download-link";
   var candidates = /* @__PURE__ */ new Map();
   chrome.runtime.onInstalled.addListener(() => {
-    chrome.contextMenus.removeAll(() => chrome.contextMenus.create({ id: MENU_ID, title: "Download with Grabify", contexts: ["link"] }));
+    chrome.contextMenus.removeAll(() => chrome.contextMenus.create({ id: MENU_ID, title: "Download with Rivlet", contexts: ["link"] }));
     chrome.storage.local.get(["captureDownloads", "captureTorrents", "videoEnabled"], (v) => {
       const defaults = {};
       if (v.captureDownloads === void 0) defaults.captureDownloads = true;
@@ -60,13 +60,13 @@
     throw new Error("Native host unavailable");
   }
   async function notifyFailure(message) {
-    await chrome.notifications.create({ type: "basic", iconUrl: "icons/icon-128.png", title: "Grabify could not receive the download", message });
+    await chrome.notifications.create({ type: "basic", iconUrl: "icons/icon-128.png", title: "Rivlet could not receive the download", message });
   }
   chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     if (info.menuItemId !== MENU_ID || !info.linkUrl) return;
     try {
       const response = await native("capture.link", { url: info.linkUrl, pageUrl: info.pageUrl, referrer: info.pageUrl, suggestedFilename: "", userAgent: navigator.userAgent });
-      if (!response.ok) throw new Error(response.error || "Grabify rejected the link");
+      if (!response.ok) throw new Error(response.error || "Rivlet rejected the link");
     } catch (error) {
       await notifyFailure(error instanceof Error ? error.message : String(error));
     }
@@ -88,16 +88,16 @@
     if (item.byExtensionId === chrome.runtime.id) return;
     const cfg = await chrome.storage.local.get(["captureDownloads"]);
     if (cfg.captureDownloads === false) return;
-    let pausedByGrabby = false;
+    let pausedByRivlet = false;
     try {
       await chrome.downloads.pause(item.id);
-      pausedByGrabby = true;
+      pausedByRivlet = true;
     } catch {
     }
     item = await resolvedDownload(item.id, item);
     const url = item.finalUrl || item.url;
     if (!isTakeoverURL(url)) {
-      if (pausedByGrabby) await chrome.downloads.resume(item.id).catch(() => {
+      if (pausedByRivlet) await chrome.downloads.resume(item.id).catch(() => {
       });
       return;
     }
@@ -109,7 +109,7 @@
     const suggested = item.filename ? item.filename.split(/[\\/]/).pop() || "" : "";
     try {
       const response = await native("capture.download", { url, pageUrl: item.referrer, referrer: item.referrer, suggestedFilename: suggested, userAgent: navigator.userAgent, cookieHeader });
-      if (!response.ok) throw new Error(response.error || "Grabify rejected the download");
+      if (!response.ok) throw new Error(response.error || "Rivlet rejected the download");
       try {
         await chrome.downloads.cancel(item.id);
       } catch {
@@ -119,7 +119,7 @@
       } catch {
       }
     } catch (error) {
-      if (pausedByGrabby) await chrome.downloads.resume(item.id).catch(() => {
+      if (pausedByRivlet) await chrome.downloads.resume(item.id).catch(() => {
       });
       await notifyFailure(error instanceof Error ? error.message : String(error));
     }
@@ -145,9 +145,9 @@
       if (!chrome.scripting) return;
       const granted = await chrome.permissions.contains({ permissions: ["scripting"], origins: ["<all_urls>"] });
       if (!granted) return;
-      const existing = await chrome.scripting.getRegisteredContentScripts({ ids: ["grabby-video-detection"] }).catch(() => []);
+      const existing = await chrome.scripting.getRegisteredContentScripts({ ids: ["rivlet-video-detection"] }).catch(() => []);
       if (existing.length) return;
-      await chrome.scripting.registerContentScripts([{ id: "grabby-video-detection", js: ["content-script.js"], matches: ["<all_urls>"], persistAcrossSessions: true, runAt: "document_idle" }]).catch(() => {
+      await chrome.scripting.registerContentScripts([{ id: "rivlet-video-detection", js: ["content-script.js"], matches: ["<all_urls>"], persistAcrossSessions: true, runAt: "document_idle" }]).catch(() => {
       });
     } catch {
     }
@@ -188,7 +188,7 @@
           return;
         }
         const response = await native("capture.torrent", { url: message.url, pageUrl: message.pageUrl, referrer: message.pageUrl, suggestedFilename: "", userAgent: navigator.userAgent });
-        if (!response.ok) throw new Error(response.error || "Grabify rejected the torrent");
+        if (!response.ok) throw new Error(response.error || "Rivlet rejected the torrent");
         sendResponse(response);
         return;
       }

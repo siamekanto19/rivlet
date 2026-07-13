@@ -50,7 +50,7 @@ func TestManagerAdoptsProCertificate(t *testing.T) {
 	m, _, signer := newManagerWithKeys(t)
 	device := m.Status().DeviceID
 	token := signer.sign(sampleEntitlement(device, time.Now(), 90, 30))
-	if err := m.adoptToken(token, "GRBFY-TEST-KEY"); err != nil {
+	if err := m.adoptToken(token, "RVLT-TEST-KEY"); err != nil {
 		t.Fatalf("adopt: %v", err)
 	}
 	if !m.Policy().IsPro() {

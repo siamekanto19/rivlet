@@ -1,7 +1,7 @@
 package main
 
 import (
-	"idm-next/backend"
+	"rivlet/backend"
 	"testing"
 )
 

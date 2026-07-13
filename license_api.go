@@ -6,12 +6,13 @@ import (
 	"time"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
-	"idm-next/backend/license"
+	"rivlet/backend/license"
 )
 
-// upgradeURL is where the "Upgrade to Pro" action sends the user. Updated to the
-// real pricing/checkout URL during Track 4.
-const upgradeURL = "https://grabify.app/#pricing"
+// upgradeURL is the public Cloudflare Pages landing page. The pricing section
+// owns the Paddle checkout, so every desktop upgrade action lands on the same
+// live purchase flow as the website.
+const upgradeURL = "https://rivlet.pro/#pricing"
 
 // licenseCtx bounds a licensing-server call. The desktop UI stays responsive; a
 // slow or unreachable server surfaces as a clear error rather than hanging.
@@ -100,7 +101,7 @@ func (a *App) RecoverLicense(email string) error {
 	return a.license.Recover(ctx, email)
 }
 
-// OpenUpgradePage opens the Grabify pricing/checkout page in the user's browser.
+// OpenUpgradePage opens the Rivlet pricing/checkout page in the user's browser.
 func (a *App) OpenUpgradePage() error {
 	if a.ctx == nil {
 		return errors.New("app not ready")

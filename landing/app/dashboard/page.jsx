@@ -31,7 +31,7 @@ function fmtDate(iso) {
 
 function useSavedTheme() {
   useEffect(() => {
-    const saved = window.localStorage.getItem("grabify-theme");
+    const saved = window.localStorage.getItem("rivlet-theme");
     if (saved === "dark" || saved === "light") document.documentElement.setAttribute("data-theme", saved);
   }, []);
 }
@@ -55,7 +55,7 @@ function Gate() {
   return (
     <main className={`${wrap} flex min-h-screen flex-col items-center justify-center text-center`}>
       <h1 className={`${heading} text-[1.8rem]`}>Sign in to your dashboard</h1>
-      <p className="mt-2 text-[15px] text-muted">Manage your Grabify Pro license and devices.</p>
+      <p className="mt-2 text-[15px] text-muted">Manage your Rivlet Pro license and devices.</p>
       <div className="mt-6 flex gap-2.5">
         <button type="button" onClick={() => clerk.openSignIn({ afterSignInUrl: "/dashboard" })} className={`${btnPrimary} px-[22px] py-[11px] text-[15px]`}>
           Log in
@@ -139,7 +139,7 @@ function Dashboard() {
         <div className={`${wrap} flex items-center gap-2`}>
           <a href="/" className="mr-auto flex items-center gap-[9px] font-sans text-[18px] font-bold tracking-[-0.02em] text-fg">
             <Logo />
-            Grabify
+            Rivlet
           </a>
           <span className="hidden text-[14px] text-muted sm:inline">{user?.primaryEmailAddress?.emailAddress}</span>
           <button type="button" onClick={() => clerk.signOut({ redirectUrl: "/" })} className="rounded-lg px-3 py-2 text-[14px] text-muted transition hover:text-fg">
@@ -150,7 +150,7 @@ function Dashboard() {
 
       <div className={`${wrap} pt-12`}>
         <h1 className={`${heading} text-[2rem]`}>Your account</h1>
-        <p className="mt-1.5 text-[15px] text-muted">Manage your Grabify Pro license and devices.</p>
+        <p className="mt-1.5 text-[15px] text-muted">Manage your Rivlet Pro license and devices.</p>
 
         {state.loading && (
           <div className="mt-10 flex items-center gap-3 text-muted">
@@ -164,9 +164,9 @@ function Dashboard() {
         {!state.loading && !state.error && state.licenses.length === 0 && (
           <div className="mt-10 rounded-2xl border border-hair p-8 text-center">
             <h2 className={`${heading} text-[1.4rem]`}>No Pro license yet</h2>
-            <p className="mx-auto mt-2 max-w-[42ch] text-[14.5px] text-muted">You&rsquo;re signed in, but haven&rsquo;t purchased Grabify Pro. Get it to unlock every feature on up to 3 devices.</p>
+            <p className="mx-auto mt-2 max-w-[42ch] text-[14.5px] text-muted">You&rsquo;re signed in, but haven&rsquo;t purchased Rivlet Pro. Get it to unlock every feature on up to 3 devices.</p>
             <a href="/#pricing" className={`${btnPrimary} mt-6 px-[22px] py-[11px] text-[15px]`}>
-              Get Grabify Pro
+              Get Rivlet Pro
             </a>
           </div>
         )}
@@ -178,8 +178,8 @@ function Dashboard() {
               <section className="rounded-2xl border border-hair p-6">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <div className={`${heading} text-[1.2rem]`}>Grabify Pro Lifetime</div>
-                    <div className="mt-0.5 text-[13.5px] text-muted">Purchased {fmtDate(lic.createdAt)} · covers Grabify {lic.versionScope || "1.x"}</div>
+                    <div className={`${heading} text-[1.2rem]`}>Rivlet Pro Lifetime</div>
+                    <div className="mt-0.5 text-[13.5px] text-muted">Purchased {fmtDate(lic.createdAt)} · covers Rivlet {lic.versionScope || "1.x"}</div>
                   </div>
                   <span className={`rounded-full px-3 py-1 text-[12px] font-semibold uppercase tracking-[0.02em] ${lic.status === "active" ? "bg-fg text-bg" : "bg-inset text-muted"}`}>
                     {lic.status === "active" ? "Active" : lic.status}
@@ -190,7 +190,7 @@ function Dashboard() {
                   <div className="text-[13px] font-medium tracking-[0.02em] text-muted">Your license key</div>
                   <div className="mt-1.5 flex flex-wrap items-center gap-2 rounded-xl border border-hair-2 bg-inset p-2.5">
                     <code className="flex-1 select-all break-all px-1 font-mono text-[15px] text-fg">
-                      {revealed[lic.licenseId] ? lic.licenseKey || "unavailable" : "GRBFY-••••-••••-••••"}
+                      {revealed[lic.licenseId] ? lic.licenseKey || "unavailable" : "RVLT-••••-••••-••••"}
                     </code>
                     <button type="button" onClick={() => setRevealed((r) => ({ ...r, [lic.licenseId]: !r[lic.licenseId] }))} className={`${btnGhost} px-3 py-1.5 text-[13px]`}>
                       {revealed[lic.licenseId] ? "Hide" : "Reveal"}
@@ -200,7 +200,7 @@ function Dashboard() {
                     </button>
                   </div>
                   <p className="mt-2.5 text-[13.5px] leading-[1.6] text-muted">
-                    Open <span className="font-medium text-fg">Grabify → Settings → License</span>, paste this key and click <span className="font-medium text-fg">Activate</span>.
+                    Open <span className="font-medium text-fg">Rivlet → Settings → License</span>, paste this key and click <span className="font-medium text-fg">Activate</span>.
                   </p>
                 </div>
               </section>
@@ -214,7 +214,7 @@ function Dashboard() {
                   </span>
                 </div>
                 {(lic.devices || []).length === 0 ? (
-                  <p className="mt-3 text-[14px] text-muted">No devices activated yet. Activate Grabify on a PC with your key.</p>
+                  <p className="mt-3 text-[14px] text-muted">No devices activated yet. Activate Rivlet on a PC with your key.</p>
                 ) : (
                   <ul className="mt-4 flex list-none flex-col gap-2 p-0">
                     {lic.devices.map((d) => (

@@ -107,7 +107,7 @@ async function onAddSubmit(req: AddDownloadRequest) {
       // and remember the request so we can retry it automatically afterwards.
       pendingVideoRetry.value = req;
       pendingReq.value = null;
-      showError('Video downloads need yt-dlp — Grabify can install it for you.', {
+      showError('Video downloads need yt-dlp — Rivlet can install it for you.', {
         label: 'Install yt-dlp (~17 MB)',
         run: installYtDlp,
       });

@@ -1,6 +1,6 @@
-# Grabify licensing backend
+# Rivlet licensing backend
 
-Cloudflare Worker that provisions and validates **Grabify Pro** licenses:
+Cloudflare Worker that provisions and validates **Rivlet Pro** licenses:
 Paddle webhooks → license provisioning, and device activation → signed offline
 entitlement certificates the desktop app verifies. See the repo-root
 [`LICENSING.md`](../LICENSING.md) for the certificate format and endpoint
@@ -35,8 +35,8 @@ this Worker's code and verifying in Go (see the repo `LICENSING.md`).
 
 ```bash
 wrangler login
-wrangler d1 create grabify-licensing          # paste database_id into wrangler.jsonc
-wrangler d1 migrations apply grabify-licensing --remote
+wrangler d1 create rivlet-licensing          # paste database_id into wrangler.jsonc
+wrangler d1 migrations apply rivlet-licensing --remote
 npm run keygen                                # generate the production cert keypair
 wrangler secret put CERT_SIGNING_KEY          # pkcs8 private from keygen
 wrangler secret put PADDLE_WEBHOOK_SECRET
@@ -47,4 +47,4 @@ wrangler deploy
 
 Then paste the keygen **public** key into `backend/license/keys.go`
 (`productionPublicKeyB64`) and point the desktop app at the Worker with
-`GRABIFY_LICENSE_API` (or update `defaultAPIBase`).
+`RIVLET_LICENSE_API` (or update `defaultAPIBase`).

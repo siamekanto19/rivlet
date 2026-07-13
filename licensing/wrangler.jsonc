@@ -42,7 +42,7 @@
     "DEVICE_LIMIT": "3",
     "OFFLINE_DAYS": "90",
     "GRACE_DAYS": "30",
-    "EMAIL_FROM": "Grabify <keys@grabify.app>",
+    "EMAIL_FROM": "Rivlet <keys@rivlet.pro>",
     "EMAIL_PROVIDER_URL": "https://api.resend.com/emails",
     "CLERK_ISSUER": "https://enough-doberman-25.clerk.accounts.dev"
   }

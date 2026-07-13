@@ -10,7 +10,7 @@ import (
 	"golang.org/x/sys/windows/registry"
 )
 
-const nativeHostName = "com.grabby.download_manager"
+const nativeHostName = "com.rivlet.download_manager"
 
 // nativeHostExe locates the native-messaging host executable: next to the
 // installed app, or in build/bin during `wails dev`.
@@ -19,12 +19,12 @@ func nativeHostExe() (string, bool) {
 	if exe, err := os.Executable(); err == nil {
 		dir := filepath.Dir(exe)
 		cands = append(cands,
-			filepath.Join(dir, "integration", "grabby-native-host.exe"),
-			filepath.Join(dir, "grabby-native-host.exe"),
+			filepath.Join(dir, "integration", "rivlet-native-host.exe"),
+			filepath.Join(dir, "rivlet-native-host.exe"),
 		)
 	}
 	if wd, err := os.Getwd(); err == nil {
-		cands = append(cands, filepath.Join(wd, "build", "bin", "grabby-native-host.exe"))
+		cands = append(cands, filepath.Join(wd, "build", "bin", "rivlet-native-host.exe"))
 	}
 	for _, c := range cands {
 		if st, err := os.Stat(c); err == nil && !st.IsDir() {
@@ -35,7 +35,7 @@ func nativeHostExe() (string, bool) {
 }
 
 // registerNativeHost writes the native-messaging manifest and points the
-// Chromium-based browsers at it, so the loaded extension can reach Grabby.
+// Chromium-based browsers at it, so the loaded extension can reach Rivlet.
 // It's best-effort and idempotent, and runs on every startup so it self-heals
 // in dev and after the app is moved.
 func registerNativeHost() {
@@ -47,7 +47,7 @@ func registerNativeHost() {
 	if err != nil {
 		return
 	}
-	dir := filepath.Join(cfgDir, "Grabby")
+	dir := filepath.Join(cfgDir, "Rivlet")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return
 	}
@@ -55,7 +55,7 @@ func registerNativeHost() {
 
 	manifest := map[string]any{
 		"name":            nativeHostName,
-		"description":     "Grabby browser integration",
+		"description":     "Rivlet browser integration",
 		"path":            hostExe,
 		"type":            "stdio",
 		"allowed_origins": []string{"chrome-extension://" + extensionID + "/"},

@@ -36,7 +36,7 @@ func torrentDisplayName(src string) string {
 }
 
 // AddTorrentFile imports a .torrent file: it validates it, copies it into
-// Grabby's state directory (so resume works even if the original moves), and
+// Rivlet's state directory (so resume works even if the original moves), and
 // queues it like any other download.
 func (m *Manager) AddTorrentFile(path string) (Download, error) {
 	mi, err := metainfo.LoadFromFile(path)

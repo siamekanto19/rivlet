@@ -23,7 +23,7 @@ func sampleEntitlement(deviceID string, issued time.Time, offlineDays, graceDays
 	return Entitlement{
 		Version:      1,
 		LicenseID:    "lic_123",
-		Product:      "grabify-pro-lifetime",
+		Product:      "rivlet-pro-lifetime",
 		Tier:         TierPro,
 		Edition:      "lifetime",
 		VersionScope: "1.x",

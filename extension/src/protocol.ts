@@ -1,4 +1,4 @@
-export const NATIVE_HOST = 'com.grabby.download_manager';
+export const NATIVE_HOST = 'com.rivlet.download_manager';
 export type BrowserName = 'chrome' | 'edge';
 export interface NativeResponse { version: 1; id: string; ok: boolean; error?: string; data?: unknown }
 export function browserName(): BrowserName { return navigator.userAgent.includes('Edg/') ? 'edge' : 'chrome'; }

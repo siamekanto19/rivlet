@@ -92,7 +92,7 @@ function rt(): Runtime | undefined {
   return (window as unknown as { runtime?: Runtime }).runtime;
 }
 
-const DESKTOP_ONLY = 'Licensing is only available in the Grabify desktop app.';
+const DESKTOP_ONLY = 'Licensing is only available in the Rivlet desktop app.';
 
 export const licenseService = {
   /** True when running inside the packaged app (Go licensing present). */
@@ -140,7 +140,7 @@ export const licenseService = {
     if (a?.OpenUpgradePage) {
       void a.OpenUpgradePage();
     } else {
-      window.open('https://grabify.app/#pricing', '_blank');
+      window.open('https://rivlet.pro/#pricing', '_blank');
     }
   },
   /** Fires when the entitlement changes (activation, refresh, revoke). */

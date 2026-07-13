@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"idm-next/backend/license"
+	"rivlet/backend/license"
 )
 
 // peakCountingServer serves a ranged, resumable payload and records the peak

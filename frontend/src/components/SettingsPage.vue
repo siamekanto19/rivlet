@@ -174,7 +174,7 @@ async function chooseCategoryFolder(category: Category) {
         <section v-show="active === 'appearance'" class="pane">
           <div class="frow">
             <label>Theme</label>
-            <span class="hint">Choose how Grabify looks. “System” follows your Windows theme.</span>
+            <span class="hint">Choose how Rivlet looks. “System” follows your Windows theme.</span>
             <div class="seg" role="radiogroup" aria-label="Theme">
               <button
                 v-for="o in themeOptions"
@@ -194,7 +194,7 @@ async function chooseCategoryFolder(category: Category) {
 
         <!-- PERSONALIZATION -->
         <section v-show="active === 'personalization'" class="pane">
-          <div class="section-intro"><h2>Personalization</h2><p>Tune how Grabify looks and feels. These preferences apply instantly and are remembered on this PC.</p></div>
+          <div class="section-intro"><h2>Personalization</h2><p>Tune how Rivlet looks and feels. These preferences apply instantly and are remembered on this PC.</p></div>
 
           <!-- table style -->
           <div class="frow">
@@ -275,7 +275,7 @@ async function chooseCategoryFolder(category: Category) {
               <input type="checkbox" :checked="ui.followSystemAccent" @change="ui.setFollowSystemAccent(($event.target as HTMLInputElement).checked)" />
               Follow Windows accent color
             </label>
-            <span class="hint">Match your Windows accent. Turn off to use Grabify's built-in accent.</span>
+            <span class="hint">Match your Windows accent. Turn off to use Rivlet's built-in accent.</span>
           </div>
           <div class="frow">
             <label class="chk">
@@ -316,7 +316,7 @@ async function chooseCategoryFolder(category: Category) {
               <option value="skip">Skip the download</option>
             </select>
           </div>
-          <label class="chk"><input type="checkbox" v-model="draft.autoResumeOnStartup" /> Resume interrupted downloads when Grabify starts</label>
+          <label class="chk"><input type="checkbox" v-model="draft.autoResumeOnStartup" /> Resume interrupted downloads when Rivlet starts</label>
           <label class="chk"><input type="checkbox" v-model="draft.removeCompleted" /> Remove completed items from the list automatically</label>
         </section>
 
@@ -324,7 +324,7 @@ async function chooseCategoryFolder(category: Category) {
         <section v-show="active === 'connection'" class="pane">
           <div class="section-intro"><h2>Connection tuning</h2><p>Control parallel connections, failure recovery, and HTTP identity.</p></div>
           <div class="frow inline"><label>Segments per download</label><input class="narrow" type="number" min="1" max="32" v-model.number="draft.segmentCount" /></div>
-          <span class="hint">Grabify adapts this maximum to file size. Sixteen is fast for large files without wasting connections on small files.</span>
+          <span class="hint">Rivlet adapts this maximum to file size. Sixteen is fast for large files without wasting connections on small files.</span>
           <div class="frow inline"><label>Retry failed downloads</label><div class="unit-control"><input class="narrow" type="number" min="0" max="20" v-model.number="draft.retryCount" /><span>times</span></div></div>
           <div class="frow inline"><label>Delay between retries</label><div class="unit-control"><input class="narrow" type="number" min="1" max="3600" v-model.number="draft.retryDelaySeconds" /><span>seconds</span></div></div>
           <div class="frow inline"><label>Connection timeout</label><div class="unit-control"><input class="narrow" type="number" min="5" max="300" v-model.number="draft.requestTimeoutSeconds" /><span>seconds</span></div></div>
@@ -336,12 +336,12 @@ async function chooseCategoryFolder(category: Category) {
 
         <!-- FILE TYPES -->
         <section v-show="active === 'filetypes'" class="pane">
-          <div class="section-intro"><h2>Browser capture rules</h2><p>Choose which downloads the browser integration should offer to Grabify.</p></div>
+          <div class="section-intro"><h2>Browser capture rules</h2><p>Choose which downloads the browser integration should offer to Rivlet.</p></div>
           <div class="frow">
             <button class="btn primary connect-btn" @click="ui.openBrowserConnect()">
               <Icon name="link" :size="15" /> Set up browser integration…
             </button>
-            <span class="hint">Load Grabify's extension into Chrome or Edge, with step-by-step help.</span>
+            <span class="hint">Load Rivlet's extension into Chrome or Edge, with step-by-step help.</span>
           </div>
           <div class="frow"><label>Captured file extensions</label><textarea v-model="captureTypesText" rows="3" placeholder="zip, exe, pdf, mp4" /><span class="hint">Separate extensions with commas or spaces.</span></div>
           <div class="frow"><label>Excluded sites</label><textarea v-model="excludedSitesText" rows="5" placeholder="*.example.com&#10;downloads.example.org" /><span class="hint">One hostname pattern per line.</span></div>
@@ -349,17 +349,17 @@ async function chooseCategoryFolder(category: Category) {
 
         <!-- BROWSER INTEGRATION -->
         <section v-show="active === 'browser'" class="pane">
-          <label class="chk"><input type="checkbox" v-model="draft.showBrowserOnboardingOnStartup" /> Show browser setup whenever Grabify starts</label>
-          <div class="section-intro"><h2>Grabify browser integration</h2><p>Connect the bundled Chrome or Edge extension to this desktop app.</p></div>
+          <label class="chk"><input type="checkbox" v-model="draft.showBrowserOnboardingOnStartup" /> Show browser setup whenever Rivlet starts</label>
+          <div class="section-intro"><h2>Rivlet browser integration</h2><p>Connect the bundled Chrome or Edge extension to this desktop app.</p></div>
           <div class="integration-status"><span class="status-dot" /> Native capture listener is active</div>
           <div class="tool-health"><div class="tool-health-head"><div><h3>Video tools health</h3><p>{{toolHealth?.diagnosticMessage||'Checking installed tools…'}}</p></div><button class="btn" :disabled="toolBusy" @click="refreshTools">Run diagnostic</button></div><div class="tool-grid"><div v-for="tool in [toolHealth?.ytDlp,toolHealth?.ffmpeg]" :key="tool?.name" class="tool-row"><span class="status-dot" :class="{off:!tool?.installed}"/><div><b>{{tool?.name||'Tool'}}</b><small>{{tool?.installed?(tool.version||'Installed'):'Not installed'}}</small><small v-if="tool?.lastUpdated">Updated {{new Date(tool.lastUpdated).toLocaleDateString()}}</small></div></div></div><div class="tool-actions"><button class="btn primary" :disabled="toolBusy" @click="installTools">Install missing tools</button><button class="btn" :disabled="toolBusy||!toolHealth?.updaterConfigured" :title="toolHealth?.updaterConfigured?'':'Signed updater is not configured in this build'" @click="updateTools">Check for signed update</button><button class="btn" :disabled="toolBusy||!toolHealth?.ytDlp.rollbackAvailable" @click="rollbackTools">Rollback yt-dlp</button></div><span v-if="toolMessage" class="hint">{{toolMessage}}</span></div>
-          <ol class="install-steps"><li>Open <b>chrome://extensions</b> or <b>edge://extensions</b>.</li><li>Enable Developer mode and choose <b>Load unpacked</b>.</li><li>Select Grabify's installed <b>integration\extension</b> folder.</li><li>Open extension options and run Test connection.</li></ol>
+          <ol class="install-steps"><li>Open <b>chrome://extensions</b> or <b>edge://extensions</b>.</li><li>Enable Developer mode and choose <b>Load unpacked</b>.</li><li>Select Rivlet's installed <b>integration\extension</b> folder.</li><li>Open extension options and run Test connection.</li></ol>
           <label class="chk"><input type="checkbox" v-model="draft.videoDetectionEnabled" /> Enable playback-based video detection after granting all-site access in the extension</label>
           <div class="frow"><label>Never prompt on these sites</label><textarea v-model="disabledVideoSitesText" rows="4" placeholder="example.com" /><span class="hint">Keep this list aligned with the extension's Disabled sites list.</span></div>
           <div class="frow inline"><label>Preferred video quality</label><select v-model="draft.preferredVideoQuality" class="wide-control"><option value="best">Best available</option><option value="2160">2160p</option><option value="1440">1440p</option><option value="1080">1080p</option><option value="720">720p</option><option value="480">480p</option></select></div>
           <div class="frow inline"><label>Preferred container</label><select v-model="draft.preferredVideoContainer" class="wide-control"><option value="mp4">MP4</option><option value="mkv">MKV</option><option value="webm">WebM</option></select></div>
           <div class="frow inline"><label>Concurrent video fragments</label><input class="narrow" type="number" min="1" max="16" v-model.number="draft.concurrentFragments" /></div>
-          <div class="cookie-box"><label class="chk"><input type="checkbox" v-model="draft.cookieConsent" /> Allow yt-dlp to read a selected browser profile only when sign-in is required</label><div class="cookie-row"><select v-model="draft.cookieBrowser" :disabled="!draft.cookieConsent"><option value="">Choose browser</option><option value="chrome">Chrome</option><option value="edge">Edge</option></select><input v-model="draft.cookieProfile" :disabled="!draft.cookieConsent" placeholder="Profile path or name (for example Default)" /></div><span class="hint">Grabify stores only this browser/profile choice, never cookie values. Disable this option to revoke consent.</span></div>
+          <div class="cookie-box"><label class="chk"><input type="checkbox" v-model="draft.cookieConsent" /> Allow yt-dlp to read a selected browser profile only when sign-in is required</label><div class="cookie-row"><select v-model="draft.cookieBrowser" :disabled="!draft.cookieConsent"><option value="">Choose browser</option><option value="chrome">Chrome</option><option value="edge">Edge</option></select><input v-model="draft.cookieProfile" :disabled="!draft.cookieConsent" placeholder="Profile path or name (for example Default)" /></div><span class="hint">Rivlet stores only this browser/profile choice, never cookie values. Disable this option to revoke consent.</span></div>
         </section>
 
         <!-- CATEGORIES -->

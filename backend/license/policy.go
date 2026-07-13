@@ -1,4 +1,4 @@
-// Package license implements Grabify's offline entitlement layer: a signed
+// Package license implements Rivlet's offline entitlement layer: a signed
 // entitlement certificate issued by the licensing backend after activation, its
 // verification against a baked-in Ed25519 public key, and the Policy that maps
 // an entitlement to the concrete limits the download engine enforces.
@@ -69,7 +69,7 @@ func FreePolicy() Policy {
 	}
 }
 
-// ProPolicy is the Grabify Pro Lifetime entitlement.
+// ProPolicy is the Rivlet Pro Lifetime entitlement.
 func ProPolicy() Policy {
 	return Policy{
 		Tier:                      TierPro,

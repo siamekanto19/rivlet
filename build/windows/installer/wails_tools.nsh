@@ -5,13 +5,13 @@
 !include "FileFunc.nsh"
 
 !ifndef INFO_PROJECTNAME
-    !define INFO_PROJECTNAME "Grabify"
+    !define INFO_PROJECTNAME "Rivlet"
 !endif
 !ifndef INFO_COMPANYNAME
-    !define INFO_COMPANYNAME "Grabify"
+    !define INFO_COMPANYNAME "Rivlet"
 !endif
 !ifndef INFO_PRODUCTNAME
-    !define INFO_PRODUCTNAME "Grabify"
+    !define INFO_PRODUCTNAME "Rivlet"
 !endif
 !ifndef INFO_PRODUCTVERSION
     !define INFO_PRODUCTVERSION "1.0.0"

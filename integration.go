@@ -12,7 +12,7 @@ import (
 // the installer writes).
 const extensionID = "iimckgccfcifkglbmdcghhfkdkbcbiib"
 
-// BrowserInfo is a browser Grabby detected on this machine.
+// BrowserInfo is a browser Rivlet detected on this machine.
 type BrowserInfo struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
@@ -63,7 +63,7 @@ func (a *App) GetBrowserIntegration() BrowserIntegrationInfo {
 }
 
 // OpenBrowserExtensions opens the given browser's extensions page so the user
-// can enable Developer mode and load Grabby's extension.
+// can enable Developer mode and load Rivlet's extension.
 func (a *App) OpenBrowserExtensions(id string) error { return openBrowserExtensions(id) }
 
 // OpenExtensionFolder reveals the unpacked extension folder in the file

@@ -2,11 +2,11 @@ import { NATIVE_HOST, envelope, type NativeResponse } from './protocol';
 import { currentCandidates, isMediaURL, isSiteDisabled, type MediaCandidate } from './media';
 import { isTakeoverURL, serializeCookies } from './download-capture';
 
-const MENU_ID='grabby-download-link';
+const MENU_ID='rivlet-download-link';
 const candidates=new Map<number,Map<string,MediaCandidate>>();
 
 chrome.runtime.onInstalled.addListener(()=>{
-  chrome.contextMenus.removeAll(()=>chrome.contextMenus.create({id:MENU_ID,title:'Download with Grabify',contexts:['link']}));
+  chrome.contextMenus.removeAll(()=>chrome.contextMenus.create({id:MENU_ID,title:'Download with Rivlet',contexts:['link']}));
   // Auto-capture browser downloads is on by default.
   chrome.storage.local.get(['captureDownloads','captureTorrents','videoEnabled'],v=>{
     const defaults:Record<string,boolean>={};
@@ -26,20 +26,20 @@ async function native(action:string,payload:unknown):Promise<NativeResponse>{
 }
 
 async function notifyFailure(message:string){
-  await chrome.notifications.create({type:'basic',iconUrl:'icons/icon-128.png',title:'Grabify could not receive the download',message});
+  await chrome.notifications.create({type:'basic',iconUrl:'icons/icon-128.png',title:'Rivlet could not receive the download',message});
 }
 
 chrome.contextMenus.onClicked.addListener(async(info,tab)=>{
   if(info.menuItemId!==MENU_ID||!info.linkUrl)return;
   try{
     const response=await native('capture.link',{url:info.linkUrl,pageUrl:info.pageUrl,referrer:info.pageUrl,suggestedFilename:'',userAgent:navigator.userAgent});
-    if(!response.ok)throw new Error(response.error||'Grabify rejected the link');
+    if(!response.ok)throw new Error(response.error||'Rivlet rejected the link');
   }catch(error){await notifyFailure(error instanceof Error?error.message:String(error));}
 });
 
 // -- automatic download capture --------------------------------------------
-// When the browser starts a download, hand it to Grabby. The browser transfer
-// is cancelled only after Grabby confirms it created a record.
+// When the browser starts a download, hand it to Rivlet. The browser transfer
+// is cancelled only after Rivlet confirms it created a record.
 // Guard the namespace: if the downloads permission isn't active yet, accessing
 // it unguarded would throw at load and kill the whole service worker.
 chrome.downloads?.onCreated?.addListener((item)=>{void grabDownload(item);});
@@ -47,7 +47,7 @@ chrome.downloads?.onCreated?.addListener((item)=>{void grabDownload(item);});
 async function resolvedDownload(id:number,initial:chrome.downloads.DownloadItem){
   // onCreated often fires before redirects, the Content-Disposition filename,
   // and the signed final URL have reached the downloads API. Give Chrome a
-  // bounded window to settle while Grabby keeps its transfer paused.
+  // bounded window to settle while Rivlet keeps its transfer paused.
   let current=initial;
   for(let attempt=0;attempt<4;attempt++){
     if(attempt>0)await new Promise(resolve=>setTimeout(resolve,250));
@@ -64,12 +64,12 @@ async function grabDownload(item:chrome.downloads.DownloadItem){
   if(cfg.captureDownloads===false)return;
   // Stop Chrome at the earliest downloads API event. Otherwise a small file
   // can finish while the native host is still starting.
-  let pausedByGrabby=false;
-  try{await chrome.downloads.pause(item.id);pausedByGrabby=true;}catch{/* already complete or not pausable */}
+  let pausedByRivlet=false;
+  try{await chrome.downloads.pause(item.id);pausedByRivlet=true;}catch{/* already complete or not pausable */}
   item=await resolvedDownload(item.id,item);
   const url=item.finalUrl||item.url;
   if(!isTakeoverURL(url)){
-    if(pausedByGrabby)await chrome.downloads.resume(item.id).catch(()=>{});
+    if(pausedByRivlet)await chrome.downloads.resume(item.id).catch(()=>{});
     return; // skip blob:, data:, file:
   }
   try{
@@ -80,11 +80,11 @@ async function grabDownload(item:chrome.downloads.DownloadItem){
   const suggested=item.filename?(item.filename.split(/[\\/]/).pop()||''):'';
   try{
     const response=await native('capture.download',{url,pageUrl:item.referrer,referrer:item.referrer,suggestedFilename:suggested,userAgent:navigator.userAgent,cookieHeader});
-    if(!response.ok)throw new Error(response.error||'Grabify rejected the download');
+    if(!response.ok)throw new Error(response.error||'Rivlet rejected the download');
     try{await chrome.downloads.cancel(item.id);}catch{/* may already be finished */}
     try{await chrome.downloads.erase({id:item.id});}catch{/* ignore */}
   }catch(error){
-    if(pausedByGrabby)await chrome.downloads.resume(item.id).catch(()=>{});
+    if(pausedByRivlet)await chrome.downloads.resume(item.id).catch(()=>{});
     await notifyFailure(error instanceof Error?error.message:String(error));
   }
 }
@@ -115,9 +115,9 @@ async function ensureContentScript(){
     if(!chrome.scripting)return;
     const granted=await chrome.permissions.contains({permissions:['scripting'],origins:['<all_urls>']});
     if(!granted)return;
-    const existing=await chrome.scripting.getRegisteredContentScripts({ids:['grabby-video-detection']}).catch(()=>[]);
+    const existing=await chrome.scripting.getRegisteredContentScripts({ids:['rivlet-video-detection']}).catch(()=>[]);
     if(existing.length)return;
-    await chrome.scripting.registerContentScripts([{id:'grabby-video-detection',js:['content-script.js'],matches:['<all_urls>'],persistAcrossSessions:true,runAt:'document_idle'}]).catch(()=>{});
+    await chrome.scripting.registerContentScripts([{id:'rivlet-video-detection',js:['content-script.js'],matches:['<all_urls>'],persistAcrossSessions:true,runAt:'document_idle'}]).catch(()=>{});
   }catch{/* ignore */}
 }
 void ensureContentScript();
@@ -143,7 +143,7 @@ chrome.runtime.onMessage.addListener((message,sender,sendResponse)=>{
       const cfg=await chrome.storage.local.get(['captureTorrents']);
       if(cfg.captureTorrents===false){sendResponse({ok:false,error:'Torrent capture is disabled'});return;}
       const response=await native('capture.torrent',{url:message.url,pageUrl:message.pageUrl,referrer:message.pageUrl,suggestedFilename:'',userAgent:navigator.userAgent});
-      if(!response.ok)throw new Error(response.error||'Grabify rejected the torrent');
+      if(!response.ok)throw new Error(response.error||'Rivlet rejected the torrent');
       sendResponse(response);return;
     }
     if(message?.type==='site.disable'){

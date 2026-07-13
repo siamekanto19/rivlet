@@ -15,7 +15,7 @@ export default defineWorkersConfig({
           // the dev kid so the same tokens verify in the Go client during the
           // cross-compat test.
           bindings: {
-            CERT_KID: "grabify-dev",
+            CERT_KID: "rivlet-dev",
             CERT_SIGNING_KEY: keys.privatePkcs8,
             LICENSE_KEY_PEPPER: "test-pepper",
             PADDLE_WEBHOOK_SECRET: "test-webhook-secret",

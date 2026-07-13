@@ -13,13 +13,13 @@ const FULL_H = 720;
 const CAP_W = 470;
 const CAP_H = 480;
 
-const THEME_KEY = 'grabby-theme';
-const TABLE_STYLE_KEY = 'grabby-table-style';
-const DENSITY_KEY = 'grabby-density';
-const TEXT_SIZE_KEY = 'grabby-text-size';
-const FOLLOW_ACCENT_KEY = 'grabby-follow-accent';
-const COLORFUL_ICONS_KEY = 'grabby-colorful-icons';
-const REDUCE_MOTION_KEY = 'grabby-reduce-motion';
+const THEME_KEY = 'rivlet-theme';
+const TABLE_STYLE_KEY = 'rivlet-table-style';
+const DENSITY_KEY = 'rivlet-density';
+const TEXT_SIZE_KEY = 'rivlet-text-size';
+const FOLLOW_ACCENT_KEY = 'rivlet-follow-accent';
+const COLORFUL_ICONS_KEY = 'rivlet-colorful-icons';
+const REDUCE_MOTION_KEY = 'rivlet-reduce-motion';
 
 type Mode = 'full' | 'mini' | 'capture';
 type View = 'downloads' | 'settings';
@@ -29,9 +29,26 @@ type Density = 'compact' | 'comfortable' | 'spacious';
 type TextSize = 'small' | 'default' | 'large';
 
 // -- small localStorage helpers (personalization prefs live client-side) ----
+function legacyKey(key: string): string {
+  return key.replace(/^rivlet-/, 'grabby-');
+}
+function readStored(key: string): string | null {
+  try {
+    const current = localStorage.getItem(key);
+    if (current !== null) return current;
+    const legacy = localStorage.getItem(legacyKey(key));
+    if (legacy !== null) {
+      // Keep existing personalisation when upgrading from Grabby to Rivlet.
+      localStorage.setItem(key, legacy);
+    }
+    return legacy;
+  } catch {
+    return null;
+  }
+}
 function readEnum<T extends string>(key: string, allowed: readonly T[], fallback: T): T {
   try {
-    const v = localStorage.getItem(key);
+    const v = readStored(key);
     if (v && (allowed as readonly string[]).includes(v)) return v as T;
   } catch {
     /* ignore */
@@ -40,7 +57,7 @@ function readEnum<T extends string>(key: string, allowed: readonly T[], fallback
 }
 function readBool(key: string, fallback: boolean): boolean {
   try {
-    const v = localStorage.getItem(key);
+    const v = readStored(key);
     if (v === 'true') return true;
     if (v === 'false') return false;
   } catch {
@@ -136,7 +153,7 @@ function prefersDark(): boolean {
 
 function readThemePref(): ThemePref {
   try {
-    const v = localStorage.getItem(THEME_KEY) ?? localStorage.getItem('idm-theme');
+    const v = readStored(THEME_KEY) ?? localStorage.getItem('idm-theme');
     if (v === 'light' || v === 'dark' || v === 'system') return v;
   } catch {
     /* ignore */

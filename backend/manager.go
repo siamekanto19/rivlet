@@ -26,7 +26,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"idm-next/backend/license"
+	"rivlet/backend/license"
 )
 
 type EventSink func(string, any)
@@ -82,7 +82,7 @@ func NewManager(stateDir string, emit EventSink) (*Manager, error) {
 		if err != nil {
 			return nil, err
 		}
-		stateDir = filepath.Join(stateDir, "Grabby")
+		stateDir = filepath.Join(stateDir, "Rivlet")
 	}
 	if err := os.MkdirAll(stateDir, 0755); err != nil {
 		return nil, err
@@ -114,7 +114,7 @@ func NewManager(stateDir string, emit EventSink) (*Manager, error) {
 	m := &Manager{downloads: map[string]*Download{}, limits: map[string]*int64{}, cancels: map[string]context.CancelFunc{}, authSecrets: map[string]string{}, browserCookies: map[string]string{}, statePath: filepath.Join(stateDir, "state.json"), client: &http.Client{Transport: transport}, emit: emit, wake: make(chan struct{}, 1), closed: make(chan struct{})}
 	m.settings = defaultSettings(dl)
 	m.normalizeSettings()
-	if err := m.openStore(filepath.Join(stateDir, "grabify.db")); err != nil {
+	if err := m.openStore(filepath.Join(stateDir, "rivlet.db")); err != nil {
 		return nil, err
 	}
 	if err := m.load(); err != nil {
@@ -134,7 +134,7 @@ func defaultSettings(dl string) Settings {
 		DownloadDir: dl, MaxConcurrent: 4, UseSystemProxy: true,
 		NotifyOnComplete: true, AutoResumeOnStartup: false,
 		SegmentCount: 16, RetryCount: 3, RetryDelaySeconds: 5,
-		RequestTimeoutSeconds: 30, UserAgent: "Grabify/1.0", OverwritePolicy: "rename",
+		RequestTimeoutSeconds: 30, UserAgent: "Rivlet/1.0", OverwritePolicy: "rename",
 		VideoDetectionEnabled: true, PreferredVideoQuality: "best", PreferredVideoContainer: "mp4", ConcurrentFragments: 4,
 		Queues: []Queue{{ID: "default", Name: "Downloads", MaxConcurrent: 4, Running: true, Schedule: &Schedule{StartHHmm: "01:00", StopHHmm: "08:00", Weekdays: []int{0, 1, 2, 3, 4, 5, 6}, Repeat: true}}},
 		Categories: []Category{
@@ -232,7 +232,7 @@ func (m *Manager) Add(r AddRequest) (Download, error) {
 	// Free, a supplied secret is still used for this download (held in memory for
 	// the session below) but never written to disk.
 	if r.AuthSecret != "" && r.RememberCredential && m.policy().AllowStoredCredentials {
-		credentialTarget = "Grabify/http/" + safeHost(r.URL) + "/" + r.AuthUsername
+		credentialTarget = "Rivlet/http/" + safeHost(r.URL) + "/" + r.AuthUsername
 		if err := storeCredential(credentialTarget, r.AuthUsername, r.AuthSecret); err != nil {
 			m.mu.Unlock()
 			return Download{}, err
@@ -1770,13 +1770,13 @@ func (m *Manager) normalizeSettings() {
 		m.settings.RequestTimeoutSeconds = 30
 	}
 	if m.settings.UserAgent == "" {
-		m.settings.UserAgent = "IDM-next/1.0"
+		m.settings.UserAgent = "Rivlet/1.0"
 	}
 	if m.settings.OverwritePolicy == "" {
 		m.settings.OverwritePolicy = "rename"
 	}
 	if m.settings.TemporaryDir == "" {
-		m.settings.TemporaryDir = filepath.Join(os.TempDir(), "IDM-next")
+		m.settings.TemporaryDir = filepath.Join(os.TempDir(), "Rivlet")
 	}
 	if len(m.settings.CaptureFileTypes) == 0 {
 		m.settings.CaptureFileTypes = []string{"zip", "rar", "7z", "exe", "msi", "pdf", "mp3", "mp4", "mkv", "iso"}
@@ -1819,7 +1819,7 @@ func loadMeta(path string, d *Download) bool {
 func (m *Manager) metaPath(d *Download) string {
 	dir := m.settings.TemporaryDir
 	if dir == "" {
-		dir = filepath.Join(os.TempDir(), "IDM-next")
+		dir = filepath.Join(os.TempDir(), "Rivlet")
 	}
 	_ = os.MkdirAll(dir, 0755)
 	return filepath.Join(dir, d.ID+".meta.json")

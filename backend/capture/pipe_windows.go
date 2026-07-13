@@ -15,10 +15,10 @@ import (
 func PipeName() string {
 	u, err := user.Current()
 	if err != nil {
-		return `\\.\pipe\Grabby.Native.default`
+		return `\\.\pipe\Rivlet.Native.default`
 	}
 	sid := strings.NewReplacer("\\", "_", "/", "_", ":", "_").Replace(u.Uid)
-	return `\\.\pipe\Grabby.Native.` + sid
+	return `\\.\pipe\Rivlet.Native.` + sid
 }
 
 func Listen() (net.Listener, error) {

@@ -20,8 +20,8 @@
     showPrompt(video, result.candidates || []);
   }
   function observe(video) {
-    if (video.dataset.grabbyObserved) return;
-    video.dataset.grabbyObserved = "1";
+    if (video.dataset.rivletObserved) return;
+    video.dataset.rivletObserved = "1";
     video.addEventListener("encrypted", () => {
       drm.add(video);
       cleanup?.();
@@ -38,7 +38,7 @@
     host.style.all = "initial";
     document.documentElement.append(host);
     const shadow = host.attachShadow({ mode: "closed" });
-    shadow.innerHTML = `<style>:host{all:initial}.bar{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:2147483647;display:flex;align-items:center;gap:12px;min-width:390px;max-width:calc(100vw - 32px);padding:12px 14px;border:1px solid rgba(255,255,255,.18);border-radius:12px;background:#111;color:#fff;box-shadow:0 14px 40px rgba(0,0,0,.42);font:13px "Segoe UI",sans-serif}.text{flex:1;min-width:0}.title{font-weight:650}.sub{margin-top:2px;color:#aaa;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}button{border:0;border-radius:7px;padding:7px 11px;font:600 12px "Segoe UI",sans-serif;cursor:pointer}.download{background:#0f6cbd;color:#fff}.dismiss,.never{background:#292929;color:#eee}.never{padding:7px 8px}</style><div class="bar" role="dialog" aria-label="Grabify video download"><div class="text"><div class="title">Download this video with Grabify?</div><div class="sub"></div></div><button class="never" title="Never show on this site">Never here</button><button class="dismiss">Dismiss</button><button class="download">Download</button></div>`;
+    shadow.innerHTML = `<style>:host{all:initial}.bar{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:2147483647;display:flex;align-items:center;gap:12px;min-width:390px;max-width:calc(100vw - 32px);padding:12px 14px;border:1px solid rgba(255,255,255,.18);border-radius:12px;background:#111;color:#fff;box-shadow:0 14px 40px rgba(0,0,0,.42);font:13px "Segoe UI",sans-serif}.text{flex:1;min-width:0}.title{font-weight:650}.sub{margin-top:2px;color:#aaa;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}button{border:0;border-radius:7px;padding:7px 11px;font:600 12px "Segoe UI",sans-serif;cursor:pointer}.download{background:#0f6cbd;color:#fff}.dismiss,.never{background:#292929;color:#eee}.never{padding:7px 8px}</style><div class="bar" role="dialog" aria-label="Rivlet video download"><div class="text"><div class="title">Download this video with Rivlet?</div><div class="sub"></div></div><button class="never" title="Never show on this site">Never here</button><button class="dismiss">Dismiss</button><button class="download">Download</button></div>`;
     const bar = shadow.querySelector(".bar");
     const sub = bar.querySelector(".sub");
     sub.textContent = document.title;
@@ -64,8 +64,8 @@
     if (n instanceof HTMLVideoElement) observe(n);
     else if (n instanceof Element) scan(n);
   }))).observe(document.documentElement, { subtree: true, childList: true });
-  if (!window.__grabbyMagnet) {
-    window.__grabbyMagnet = true;
+  if (!window.__rivletMagnet) {
+    window.__rivletMagnet = true;
     let captureTorrents = true;
     chrome.storage?.local?.get?.(["captureTorrents"], (v) => {
       captureTorrents = v.captureTorrents !== false;

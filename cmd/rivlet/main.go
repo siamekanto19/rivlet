@@ -8,14 +8,14 @@ import (
 	"path/filepath"
 	"time"
 
-	"idm-next/backend"
+	"rivlet/backend"
 )
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "Usage: grabify <list|add|pause|resume|retry|remove|diagnostics> [options]")
+	fmt.Fprintln(os.Stderr, "Usage: rivlet <list|add|pause|resume|retry|remove|diagnostics> [options]")
 	os.Exit(2)
 }
-func fatal(err error) { fmt.Fprintln(os.Stderr, "grabify:", err); os.Exit(1) }
+func fatal(err error) { fmt.Fprintln(os.Stderr, "rivlet:", err); os.Exit(1) }
 func output(v any) {
 	b, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
@@ -31,7 +31,7 @@ func requireID(id string) {
 func openManager(state string) *backend.Manager {
 	if state == "" {
 		base, _ := os.UserConfigDir()
-		state = filepath.Join(base, "Grabby")
+		state = filepath.Join(base, "Rivlet")
 	}
 	m, err := backend.NewManager(state, nil)
 	if err != nil {
@@ -46,7 +46,7 @@ func main() {
 	}
 	command := os.Args[1]
 	fs := flag.NewFlagSet(command, flag.ExitOnError)
-	state := fs.String("state-dir", "", "Grabify state directory")
+	state := fs.String("state-dir", "", "Rivlet state directory")
 	id := fs.String("id", "", "download ID")
 	rawURL := fs.String("url", "", "download URL")
 	dest := fs.String("destination", "", "destination folder")
@@ -54,7 +54,7 @@ func main() {
 	queue := fs.String("queue", "default", "queue ID")
 	wait := fs.Bool("wait", false, "wait until the added download finishes")
 	deleteFile := fs.Bool("delete-file", false, "also delete the downloaded file")
-	out := fs.String("output", "grabify-diagnostics.json", "output path")
+	out := fs.String("output", "rivlet-diagnostics.json", "output path")
 	_ = fs.Parse(os.Args[2:])
 	m := openManager(*state)
 	defer m.Close()

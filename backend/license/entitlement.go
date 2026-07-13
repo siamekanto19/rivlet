@@ -17,7 +17,7 @@ import (
 type Entitlement struct {
 	Version      int    `json:"v"`
 	LicenseID    string `json:"licenseId"`
-	Product      string `json:"product"`      // e.g. "grabify-pro-lifetime"
+	Product      string `json:"product"`      // e.g. "rivlet-pro-lifetime"
 	Tier         string `json:"tier"`         // TierPro
 	Edition      string `json:"edition"`      // e.g. "lifetime"
 	VersionScope string `json:"versionScope"` // e.g. "1.x" — major versions this license covers

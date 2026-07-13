@@ -102,7 +102,7 @@ onMounted(probe);
     <div class="cap-head">
       <span class="cap-badge"><Icon :name="isVideo ? 'video' : 'http'" :size="15" /></span>
       <div class="cap-title">
-        <div class="t1">Download with Grabify</div>
+        <div class="t1">Download with Rivlet</div>
         <div class="t2">{{ isVideo ? 'Video from your browser' : 'Link from your browser' }}</div>
       </div>
       <button class="cap-x" @click="ui.captureCancel()" title="Cancel" aria-label="Cancel"><Icon name="close" :size="15" /></button>

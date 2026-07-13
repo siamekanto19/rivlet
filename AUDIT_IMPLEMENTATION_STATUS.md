@@ -1,6 +1,6 @@
-# Grabify audit implementation status
+# Rivlet audit implementation status
 
-This ledger maps every actionable recommendation in `GRABIFY_PRODUCT_AUDIT.md` to shipped evidence. A checked item must be implemented and verified; roadmap wording alone does not qualify.
+This ledger maps every actionable recommendation in `RIVLET_PRODUCT_AUDIT.md` to shipped evidence. A checked item must be implemented and verified; roadmap wording alone does not qualify.
 
 ## Downloads experience
 

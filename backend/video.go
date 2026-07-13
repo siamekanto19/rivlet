@@ -18,17 +18,17 @@ import (
 	"sync"
 	"time"
 
-	"idm-next/backend/updater"
+	"rivlet/backend/updater"
 )
 
-// managedToolsDir is where Grabby downloads helper tools (yt-dlp, ffmpeg) it
+// managedToolsDir is where Rivlet downloads helper tools (yt-dlp, ffmpeg) it
 // installs on the user's behalf. Stable across dev and installed runs.
 func managedToolsDir() string {
 	dir, err := os.UserConfigDir()
 	if err != nil {
 		return ""
 	}
-	return filepath.Join(dir, "Grabby", "binaries")
+	return filepath.Join(dir, "Rivlet", "binaries")
 }
 
 func statTool(dir, name string) (string, bool) {
@@ -44,13 +44,13 @@ func statTool(dir, name string) (string, bool) {
 }
 
 func findTool(name string) (string, error) {
-	envName := "GRABBY_" + strings.ToUpper(strings.ReplaceAll(name, "-", "_")) + "_PATH"
+	envName := "RIVLET_" + strings.ToUpper(strings.ReplaceAll(name, "-", "_")) + "_PATH"
 	if value := os.Getenv(envName); value != "" {
 		if _, err := os.Stat(value); err == nil {
 			return value, nil
 		}
 	}
-	// Grabby-managed tools directory (auto-installed downloads).
+	// Rivlet-managed tools directory (auto-installed downloads).
 	if p, ok := statTool(managedToolsDir(), name); ok {
 		return p, nil
 	}
@@ -117,7 +117,7 @@ func toolStatus(name string) ToolStatus {
 }
 func VideoHealth() VideoToolsHealth {
 	h := VideoToolsHealth{YtDlp: toolStatus("yt-dlp"), FFmpeg: toolStatus("ffmpeg")}
-	h.UpdaterConfigured = os.Getenv("GRABIFY_YTDLP_MANIFEST_URL") != "" && os.Getenv("GRABIFY_UPDATER_PUBLIC_KEY") != ""
+	h.UpdaterConfigured = os.Getenv("RIVLET_YTDLP_MANIFEST_URL") != "" && os.Getenv("RIVLET_UPDATER_PUBLIC_KEY") != ""
 	h.DiagnosticOK = h.YtDlp.Installed && h.FFmpeg.Installed
 	if h.DiagnosticOK {
 		h.DiagnosticMessage = "Extractor and merger self-checks passed"
@@ -127,8 +127,8 @@ func VideoHealth() VideoToolsHealth {
 	return h
 }
 func signedUpdater() (updater.Updater, string, error) {
-	manifestURL := os.Getenv("GRABIFY_YTDLP_MANIFEST_URL")
-	raw := os.Getenv("GRABIFY_UPDATER_PUBLIC_KEY")
+	manifestURL := os.Getenv("RIVLET_YTDLP_MANIFEST_URL")
+	raw := os.Getenv("RIVLET_UPDATER_PUBLIC_KEY")
 	key, err := base64.StdEncoding.DecodeString(raw)
 	if manifestURL == "" || err != nil || len(key) != ed25519.PublicKeySize {
 		return updater.Updater{}, "", errors.New("signed updater is not configured in this build")
@@ -342,7 +342,7 @@ func (m *Manager) downloadVideo(ctx context.Context, id string) error {
 		}
 	}
 	if tempDir == "" {
-		tempDir = filepath.Join(os.TempDir(), "Grabby")
+		tempDir = filepath.Join(os.TempDir(), "Rivlet")
 	}
 	work := filepath.Join(tempDir, "video")
 	if err = os.MkdirAll(work, 0700); err != nil {
@@ -379,8 +379,8 @@ func (m *Manager) downloadVideo(ctx context.Context, id string) error {
 	}
 	args := []string{
 		"--no-playlist", "--continue", "--progress", "--newline", "--progress-delta", "0.25",
-		"--progress-template", "download:grabby:%(progress.downloaded_bytes)s|%(progress.total_bytes)s|%(progress.total_bytes_estimate)s|%(progress.speed)s|%(progress.eta)s",
-		"--print", "after_move:grabby-file:%(filepath)s",
+		"--progress-template", "download:rivlet:%(progress.downloaded_bytes)s|%(progress.total_bytes)s|%(progress.total_bytes_estimate)s|%(progress.speed)s|%(progress.eta)s",
+		"--print", "after_move:rivlet-file:%(filepath)s",
 		"--concurrent-fragments", strconv.Itoa(maxInt(1, fragments)),
 		"-f", format, "-o", filepath.Join(work, d.ID+".%(ext)s"),
 	}
@@ -425,12 +425,12 @@ func (m *Manager) downloadVideo(ctx context.Context, id string) error {
 	go func() { readers.Wait(); close(lines) }()
 	var produced, lastError string
 	for line := range lines {
-		if strings.HasPrefix(line, "grabby:") {
-			m.applyVideoProgress(id, strings.TrimPrefix(line, "grabby:"))
+		if strings.HasPrefix(line, "rivlet:") {
+			m.applyVideoProgress(id, strings.TrimPrefix(line, "rivlet:"))
 			continue
 		}
-		if strings.HasPrefix(line, "grabby-file:") {
-			produced = strings.TrimSpace(strings.TrimPrefix(line, "grabby-file:"))
+		if strings.HasPrefix(line, "rivlet-file:") {
+			produced = strings.TrimSpace(strings.TrimPrefix(line, "rivlet-file:"))
 			continue
 		}
 		lower := strings.ToLower(line)

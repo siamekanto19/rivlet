@@ -1,4 +1,4 @@
-# Grabify — Product Context
+# Rivlet — Product Context
 
 > Read this first. It's the single orientation document for the project: what
 > it is, how it's built, the contract that anchors everything, and what is /
@@ -8,22 +8,22 @@
 
 ## 1. What this is
 
-**Grabify** is a Windows **download manager and download accelerator**, built as
+**Rivlet** is a Windows **download manager and download accelerator**, built as
 a modern, premium alternative to Internet Download Manager (IDM). It's a native
 desktop app via **Wails** (Go backend + Vue frontend). It manages HTTP
 downloads, browser-captured downloads, videos, and torrents: queueing,
 pausing/resuming, segmented multi-connection acceleration, categories, speed
 limits, per-queue scheduling, and browser/clipboard capture.
 
-> **Naming history:** the project started as `idm-next`, was briefly "Grabby",
-> and is now **Grabify**. Some internal identifiers still read `grabby`/`idm-next`
-> (localStorage keys like `grabby-theme`, the Go module `idm-next`, a few asset
-> names) — that's expected; the user-facing product is Grabify.
+> **Naming history:** the project started as `rivlet`, was briefly "Rivlet",
+> and is now **Rivlet**. Some internal identifiers still read `rivlet`/`rivlet`
+> (localStorage keys like `rivlet-theme`, the Go module `rivlet`, a few asset
+> names) — that's expected; the user-facing product is Rivlet.
 
 **Positioning (business):** sold as a one-time-purchase (perpetual license)
 accelerator — *not* marketed as a YouTube/video downloader — to keep the widest
 legal sales/marketplace reach. See the monetization plan discussed separately;
-the landing page lives in `scratchpad/grabify-landing.html`.
+the landing page lives in `scratchpad/rivlet-landing.html`.
 
 **Design intent:** dense, information-first, and utilitarian, but *premium* —
 built to feel like a native **Windows 11 (Fluent Design)** application, not a
@@ -44,13 +44,13 @@ theme is a native warm dark-gray **Mica** (deliberately *not* true-black).
 | **Frontend (Vue 3 UI)** | ✅ Complete |
 | **Contract / service interface** | ✅ Defined (`frontend/src/types/index.ts`) |
 | **Backend (Go engine, real downloads, persistence)** | ✅ Built and working |
-| **Wails shell + packaging** | ✅ Builds to `Grabify.exe` + NSIS installer |
+| **Wails shell + packaging** | ✅ Builds to `Rivlet.exe` + NSIS installer |
 | **Browser integration** | ✅ Extension + native-messaging host (manual/guided install) |
 | **Code signing / store publishing / marketing** | ❌ Not done (pre-launch) |
 
 The app is a working end-to-end product: `wails build` produces
-`build/bin/Grabify.exe`, `build/bin/Grabify-amd64-installer.exe`, and the
-native-messaging host `build/bin/grabify-native-host.exe`. The frontend can
+`build/bin/Rivlet.exe`, `build/bin/Rivlet-amd64-installer.exe`, and the
+native-messaging host `build/bin/rivlet-native-host.exe`. The frontend can
 still run standalone in a browser on the **mock service** for fast UI iteration.
 
 ### Known gaps / not fully wired (as of the last audit)
@@ -86,11 +86,11 @@ still run standalone in a browser on the **mock service** for fast UI iteration.
 - **SQLite** persistence (WAL, transactions, migrations, corruption recovery).
 - **Torrents:** `github.com/anacrolix/torrent` (magnet + `.torrent`).
 - **Video:** external `yt-dlp` (probe/download) + `ffmpeg` (merge); resolved via
-  `findTool` (env var → managed `%APPDATA%/Grabify/binaries` → exe dir → PATH),
+  `findTool` (env var → managed `%APPDATA%/Rivlet/binaries` → exe dir → PATH),
   with an on-demand yt-dlp installer.
 - **Tray:** `github.com/energye/systray`. **Notifications:** `go-toast`.
 - **Windows accent:** read from `HKCU\...\Explorer\Accent\AccentPalette`.
-- **Native messaging host** (`grabify-native-host.exe`) bridges the browser
+- **Native messaging host** (`rivlet-native-host.exe`) bridges the browser
   extension to the app over a local pipe + secret.
 
 ---
@@ -181,7 +181,7 @@ Integration · File Types · Categories · Notifications · Advanced**
 
 - **Appearance** — theme: Light / Dark / System.
 - **Personalization** — applied live and persisted to `localStorage`
-  (`grabby-*`): **Table style** (Normal / Striped — striped adds zebra rows +
+  (`rivlet-*`): **Table style** (Normal / Striped — striped adds zebra rows +
   grid lines), **Row density** (Compact / Comfortable / Spacious → `--row-h`),
   **Text size** (Small / Default / Large), **Colorful file-type icons** (on/off),
   **Follow Windows accent color** (on/off), **Reduce animations** (on/off).
@@ -202,10 +202,10 @@ Integration · File Types · Categories · Notifications · Advanced**
 - **Sorting vs manual order:** column header sorts; drag-reorder sets manual order.
 - **Selection:** single / ctrl-toggle / shift-range, like a native file list.
 - **Theme** (`ui.ts`): `data-theme` on `<html>`, persisted to `localStorage`
-  (`grabby-theme`); resolves `system` via `prefers-color-scheme`.
+  (`rivlet-theme`); resolves `system` via `prefers-color-scheme`.
 - **Adaptive accent:** on boot the UI reads the Windows system accent
   (`App.GetSystemAccent`) and paints the accent CSS-var ramp; the *Follow Windows
-  accent color* toggle can disable this to use Grabify's built-in accent.
+  accent color* toggle can disable this to use Rivlet's built-in accent.
 
 ---
 
@@ -222,7 +222,7 @@ npm run build          # vue-tsc type-check + production build
 Full desktop app (requires Go + the Wails CLI):
 ```bash
 wails dev              # live desktop app
-wails build            # -> build/bin/Grabify.exe (+ installer, + native host)
+wails build            # -> build/bin/Rivlet.exe (+ installer, + native host)
 ```
 
 Browser integration (extension + native host) is built by

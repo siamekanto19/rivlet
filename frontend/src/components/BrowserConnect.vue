@@ -72,7 +72,7 @@ async function copyUrl() {
       <div class="head">
         <span class="badge"><Icon name="link" :size="18" /></span>
         <div class="head-text">
-          <h2>Connect Grabify to your browser</h2>
+          <h2>Connect Rivlet to your browser</h2>
           <p>Catch downloads straight from your browser.</p>
         </div>
         <button class="x" @click="emit('close')" title="Close" aria-label="Close browser setup"><Icon name="close" :size="16" /></button>
@@ -81,8 +81,8 @@ async function copyUrl() {
       <div class="body">
         <!-- what & why -->
         <p class="lead">
-          Grabify includes a small browser extension. Once it's on, clicking a download
-          link — or a supported video — hands it to Grabify instead of your browser's
+          Rivlet includes a small browser extension. Once it's on, clicking a download
+          link — or a supported video — hands it to Rivlet instead of your browser's
           basic downloader, so you get pausing, resuming and faster multi-connection
           transfers.
         </p>
@@ -90,7 +90,7 @@ async function copyUrl() {
           <Icon name="check" :size="15" />
           <span>
             It's loaded from a folder on <b>this PC</b> (not a web store), talks only to
-            Grabify on your machine, and sends <b>nothing</b> to the internet. You can
+            Rivlet on your machine, and sends <b>nothing</b> to the internet. You can
             remove it anytime from your browser's extensions page.
           </span>
         </div>
@@ -98,7 +98,7 @@ async function copyUrl() {
         <!-- connection status -->
         <div class="status" :class="{ ok: connected }">
           <span class="dot" />
-          <span v-if="connected">Connected — your browser is linked to Grabify. You're all set.</span>
+          <span v-if="connected">Connected — your browser is linked to Rivlet. You're all set.</span>
           <span v-else>Waiting for the extension… follow the steps below.</span>
         </div>
 
