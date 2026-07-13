@@ -1,3 +1,15 @@
+/
+  Cache-Control: no-cache
+
+/index.html
+  Cache-Control: no-cache
+
+/dashboard
+  Cache-Control: no-cache
+
+/dashboard.html
+  Cache-Control: no-cache
+
 /downloads/Rivlet-Setup.exe
   Content-Disposition: attachment; filename="Rivlet-Setup.exe"
   Content-Type: application/octet-stream

@@ -97,15 +97,7 @@ const faqs = [
 ];
 
 function Logo({ className = "h-5 w-5" }) {
-  return (
-    <svg className={className} viewBox="4 4 16 16" fill="none" aria-hidden="true">
-      <g stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M14 9.99997L5 19" />
-        <path d="M14.9999 19V13C14.9999 11.1144 14.9999 10.1716 14.4141 9.58579C13.8284 9 12.8856 9 10.9999 9H5" />
-        <path d="M18.9999 19V15C18.9999 10.286 18.9999 7.92893 17.5355 6.46447C16.071 5 13.714 5 8.99994 5H5" />
-      </g>
-    </svg>
-  );
+  return <img className={`${className} rounded-[22%] object-cover`} src="/assets/rivlet-logo.png" alt="" aria-hidden="true" />;
 }
 
 function SunIcon() {
@@ -375,7 +367,7 @@ export default function Home() {
       >
         <div className={`${wrap} flex items-center gap-2`}>
           <a className="mr-auto flex items-center gap-[9px] font-sans text-[19px] font-bold tracking-[-0.02em] text-fg" href="#top" aria-label="Rivlet home">
-            <Logo />
+            <Logo className="h-6 w-6" />
             Rivlet
           </a>
           <div className="hidden items-center gap-1 md:flex">

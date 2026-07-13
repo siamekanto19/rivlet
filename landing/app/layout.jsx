@@ -3,6 +3,7 @@ import Providers from "./providers";
 
 export const metadata = {
   metadataBase: new URL("https://rivlet.pro"),
+  icons: { icon: "/assets/rivlet-logo.png", apple: "/assets/rivlet-logo.png" },
   title: "Rivlet \u2014 The download manager, remade",
   description:
     "A fast, modern download manager for Windows. Splits every file across many connections so downloads finish sooner. Free to download; Pro is a one-time purchase.",

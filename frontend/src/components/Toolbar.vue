@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { useDownloadsStore } from '../stores/downloads';
 import Icon from './Icon.vue';
+import rivletLogo from '../assets/images/rivlet-logo.png';
 
 const store = useDownloadsStore();
 
@@ -17,6 +18,7 @@ const canResume = computed(() => store.canResume);
 
 <template>
   <div class="toolbar">
+    <img class="brand-mark" :src="rivletLogo" alt="Rivlet" />
     <div class="group primary-group">
       <button class="tbtn accent" @click="emit('add')" title="Add a new download (Ctrl+N)">
         <Icon name="add" :size="18" />
@@ -63,6 +65,14 @@ const canResume = computed(() => store.canResume);
   background: transparent;
   gap: 6px;
   flex: none;
+}
+.brand-mark {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  margin-right: 4px;
+  border-radius: 22%;
+  object-fit: cover;
 }
 .group {
   display: flex;
