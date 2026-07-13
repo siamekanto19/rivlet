@@ -1,0 +1,126 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: "Mackinac";
+  src: url("/fonts/Mackinac.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Fraunces";
+  src: url("/fonts/Fraunces.woff2") format("woff2");
+  font-weight: 400 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --bg: #ffffff;
+  --fg: #0b0b0c;
+  --muted: #6b6f72;
+  --faint: #a6abae;
+  --surface: #fafafa;
+  --inset: #f2f3f4;
+  --hair: rgba(11, 11, 12, 0.1);
+  --hair-2: rgba(11, 11, 12, 0.16);
+  --shadow: 0 1px 2px rgba(11, 11, 12, 0.04), 0 24px 60px -28px rgba(11, 11, 12, 0.22);
+  --beam: rgba(11, 11, 12, 0.09);
+  --screen-bg: #f1f3f7;
+}
+
+:root[data-theme="dark"] {
+  --bg: #0a0a0b;
+  --fg: #f4f5f6;
+  --muted: #9aa0a4;
+  --faint: #5f6569;
+  --surface: #111213;
+  --inset: #17181a;
+  --hair: rgba(255, 255, 255, 0.11);
+  --hair-2: rgba(255, 255, 255, 0.2);
+  --shadow: 0 0 0 1px rgba(255, 255, 255, 0.09), 0 34px 80px -34px rgba(0, 0, 0, 0.9);
+  --beam: rgba(255, 255, 255, 0.11);
+  --screen-bg: #24262a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  overflow-x: hidden;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Inter", "Helvetica Neue", Arial, sans-serif;
+  font-size: 16.5px;
+  line-height: 1.6;
+  letter-spacing: -0.005em;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--fg);
+  color: var(--bg);
+}
+
+:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: 3px;
+  border-radius: 5px;
+}
+
+.beam {
+  background: linear-gradient(to bottom, var(--beam), transparent 72%);
+  filter: blur(26px);
+  transform-origin: top center;
+  will-change: opacity;
+  animation: beam-glow 8s ease-in-out infinite;
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.7s cubic-bezier(0.2, 0.7, 0.2, 1), transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.reveal.in {
+  opacity: 1;
+  transform: none;
+}
+
+@keyframes beam-glow {
+  0%,
+  100% {
+    opacity: 0.22;
+  }
+
+  50% {
+    opacity: 0.78;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto !important;
+  }
+
+  .beam {
+    animation: none;
+    opacity: 0.42;
+  }
+
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
