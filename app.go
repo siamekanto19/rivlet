@@ -10,17 +10,20 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/energye/systray"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"idm-next/backend"
 	"idm-next/backend/capture"
+	"idm-next/backend/license"
 )
 
 // App is the Wails adapter. Domain and engine logic live in backend.Manager.
 type App struct {
 	ctx     context.Context
 	manager *backend.Manager
+	license *license.Manager
 	started bool // true once startup completed, so restored state on load
 	// (which does not emit) never triggers spurious notifications
 	quitting bool // set when the user chooses Quit from the tray, so the
@@ -51,6 +54,24 @@ func (a *App) startup(ctx context.Context) {
 			}
 		}
 	})
+	// License layer: verify any stored entitlement offline and make the download
+	// engine enforce its policy. A missing/invalid/lapsed license simply resolves
+	// to Free — the engine never blocks on this.
+	if lm, err := license.NewManager(filepath.Join(dir, "Grabby", "license.json")); err == nil {
+		a.license = lm
+		a.manager.SetEntitlementProvider(lm.Policy)
+		// If an activated device is outside its offline window, try once, quietly,
+		// to refresh the certificate in the background and tell the UI if it changed.
+		if lm.RefreshDue() {
+			go func() {
+				refreshCtx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
+				defer cancel()
+				if _, err := lm.Refresh(refreshCtx); err == nil {
+					runtime.EventsEmit(ctx, "licenseChanged", lm.Status())
+				}
+			}()
+		}
+	}
 	a.started = true
 	a.captureSeen = make(map[string]struct{})
 	a.captureSecret, _ = capture.EnsureSecret()

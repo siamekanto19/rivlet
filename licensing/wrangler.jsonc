@@ -1,0 +1,49 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "grabify-licensing",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-06-01",
+  "observability": { "enabled": true },
+
+  // D1: licenses, activations, payments, webhook_events.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "grabify-licensing",
+      "database_id": "1ed3f3b6-7797-4367-9d30-df01540c65a2",
+      "migrations_dir": "migrations"
+    }
+  ],
+
+  // One Durable Object per license serializes activation/deactivation so the
+  // device limit can never be exceeded by concurrent requests.
+  "durable_objects": {
+    "bindings": [
+      { "name": "LICENSE_DO", "class_name": "LicenseDurableObject" }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["LicenseDurableObject"]
+    }
+  ],
+
+  // Non-secret vars. Secrets (set with `wrangler secret put`, Track 4):
+  //   PADDLE_WEBHOOK_SECRET  - verifies Paddle webhook signatures
+  //   CERT_SIGNING_KEY       - Ed25519 private key (pkcs8, base64) that signs entitlements
+  //   LICENSE_KEY_PEPPER     - HMAC pepper; license keys are stored only as a keyed hash
+  //   EMAIL_API_KEY          - transactional email provider key (delivers keys / recovery)
+  "vars": {
+    "CERT_KID": "grabify-prod-1",
+    "PRODUCT_ID": "grabify-pro-lifetime",
+    "EDITION": "lifetime",
+    "VERSION_SCOPE": "1.x",
+    "DEVICE_LIMIT": "3",
+    "OFFLINE_DAYS": "90",
+    "GRACE_DAYS": "30",
+    "EMAIL_FROM": "Grabify <keys@grabify.app>",
+    "EMAIL_PROVIDER_URL": "https://api.resend.com/emails",
+    "CLERK_ISSUER": "https://enough-doberman-25.clerk.accounts.dev"
+  }
+}

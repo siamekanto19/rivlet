@@ -9,11 +9,14 @@ import WindowControls from './WindowControls.vue';
 import { pickFolder } from '../services/folderPicker';
 import { integration } from '../services/integration';
 import { videoTools, type VideoToolsHealth } from '../services/videoTools';
+import LicenseSettings from './settings/LicenseSettings.vue';
+import { useLicenseStore } from '../stores/license';
 
 const store = useDownloadsStore();
 const ui = useUiStore();
+const license = useLicenseStore();
 
-type Tab = 'general' | 'appearance' | 'personalization' | 'downloads' | 'connection' | 'browser' | 'filetypes' | 'categories' | 'notifications' | 'advanced';
+type Tab = 'general' | 'appearance' | 'personalization' | 'downloads' | 'connection' | 'browser' | 'filetypes' | 'categories' | 'notifications' | 'advanced' | 'license';
 const tabs: { id: Tab; label: string; icon: string }[] = [
   { id: 'general', label: 'General', icon: 'settings' },
   { id: 'appearance', label: 'Appearance', icon: 'appearance' },
@@ -25,6 +28,7 @@ const tabs: { id: Tab; label: string; icon: string }[] = [
   { id: 'categories', label: 'Categories', icon: 'folder' },
   { id: 'notifications', label: 'Notifications', icon: 'notification' },
   { id: 'advanced', label: 'Advanced', icon: 'settings' },
+  { id: 'license', label: 'License', icon: 'gauge' },
 ];
 const active = ref<Tab>('general');
 
@@ -49,7 +53,7 @@ const src = store.settings as Settings;
 const original=JSON.parse(JSON.stringify(src)) as Settings;
 const draft = reactive<Settings>(JSON.parse(JSON.stringify(src)));
 const confirmRestore=ref(false);
-const pageKeys:Record<Tab,(keyof Settings)[]>={general:['downloadDir','clipboardMonitoring'],appearance:[],personalization:[],downloads:['maxConcurrent','globalSpeedLimitBps','shutdownOnComplete','overwritePolicy','autoResumeOnStartup','removeCompleted'],connection:['segmentCount','retryCount','retryDelaySeconds','requestTimeoutSeconds','userAgent','useSystemProxy','proxyUrl','hostRules'],browser:['showBrowserOnboardingOnStartup','videoDetectionEnabled','disabledVideoSites','preferredVideoQuality','preferredVideoContainer','concurrentFragments','cookieConsent','cookieBrowser','cookieProfile'],filetypes:['captureFileTypes','excludedSites'],categories:['categories'],notifications:['notifyOnComplete','showCompletionDialog'],advanced:['temporaryDir','queues']};
+const pageKeys:Record<Tab,(keyof Settings)[]>={general:['downloadDir','clipboardMonitoring'],appearance:[],personalization:[],downloads:['maxConcurrent','globalSpeedLimitBps','shutdownOnComplete','overwritePolicy','autoResumeOnStartup','removeCompleted'],connection:['segmentCount','retryCount','retryDelaySeconds','requestTimeoutSeconds','userAgent','useSystemProxy','proxyUrl','hostRules'],browser:['showBrowserOnboardingOnStartup','videoDetectionEnabled','disabledVideoSites','preferredVideoQuality','preferredVideoContainer','concurrentFragments','cookieConsent','cookieBrowser','cookieProfile'],filetypes:['captureFileTypes','excludedSites'],categories:['categories'],notifications:['notifyOnComplete','showCompletionDialog'],advanced:['temporaryDir','queues'],license:[]};
 function syncDerivedFields(){captureTypesText.value=(draft.captureFileTypes??[]).join(', ');excludedSitesText.value=(draft.excludedSites??[]).join('\n');disabledVideoSitesText.value=(draft.disabledVideoSites??[]).join('\n');limitOn.value=draft.globalSpeedLimitBps!=null;limitKb.value=draft.globalSpeedLimitBps?Math.round(draft.globalSpeedLimitBps/1024):500}
 function resetPage(){for(const key of pageKeys[active.value]){(draft as unknown as Record<string,unknown>)[key]=JSON.parse(JSON.stringify((original as unknown as Record<string,unknown>)[key]))};syncDerivedFields()}
 async function restoreDefaults(){const defaults=await store.resetSettings();Object.assign(draft,JSON.parse(JSON.stringify(defaults)));syncDerivedFields();confirmRestore.value=false}
@@ -68,7 +72,7 @@ const limitKb = ref(
 
 const newCatName = ref('');
 const newQueueName = ref('');
-function addQueue(){const name=newQueueName.value.trim();if(!name)return;draft.queues.push({id:'queue-'+Date.now(),name,priority:0,maxConcurrent:2,running:true,speedLimitBps:null,schedule:{enabled:false,startHHmm:'01:00',stopHHmm:'08:00',weekdays:[0,1,2,3,4,5,6],repeat:true},completionAction:''});newQueueName.value=''}
+function addQueue(){const name=newQueueName.value.trim();if(!name)return;if(!license.isPro){license.promptUpgrade('unlimited queues','Free includes the default queue. Pro adds unlimited queues with their own priority, concurrency, bandwidth and schedule.');return}draft.queues.push({id:'queue-'+Date.now(),name,priority:0,maxConcurrent:2,running:true,speedLimitBps:null,schedule:{enabled:false,startHHmm:'01:00',stopHHmm:'08:00',weekdays:[0,1,2,3,4,5,6],repeat:true},completionAction:''});newQueueName.value=''}
 function removeQueue(id:string){if(id!=='default')draft.queues=draft.queues.filter((q)=>q.id!==id)}
 function addCategory() {
   const name = newCatName.value.trim();
@@ -424,6 +428,11 @@ async function chooseCategoryFolder(category: Category) {
           <div class="notice">Site passwords, arbitrary completion programs, forced process termination, and dial-up controls are intentionally not stored or executed until a secure credential and permission model is available.</div>
           <div class="section-intro"><h2>Diagnostics</h2><p>Export a redacted support bundle containing health, retry history, and connection timing. URLs, tokens, cookies, and credentials are excluded.</p></div>
           <div class="frow"><button class="btn connect-btn" @click="exportDiagnostics"><Icon name="file" :size="15"/> Export diagnostics…</button><span v-if="diagnosticStatus" class="hint">{{ diagnosticStatus }}</span></div>
+        </section>
+
+        <!-- LICENSE & DEVICES -->
+        <section v-show="active === 'license'" class="pane">
+          <LicenseSettings />
         </section>
         </div>
 

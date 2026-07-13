@@ -1,6 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useUser, useClerk, useAuth } from "@clerk/clerk-react";
+
+// Paddle checkout config. These are sandbox values (client token is public and
+// safe in the browser). For go-live, swap to the production token + price id and
+// set environment to "production" (Track 4).
+const PADDLE = {
+  environment: "sandbox",
+  clientToken: "test_89eb29f145561d3c5f4db7d4f60",
+  priceId: "pri_01kxd3gkx1zk5ghgghq49qnk9x",
+};
+
+const PRICE = { launch: "$9.99", regular: "$12.99" };
+const LICENSE_API = "https://grabify-licensing.siamekanto.workers.dev";
+// Public installer asset. Kept under /public so Next.js serves it as a direct
+// attachment without routing a 15 MB executable through application code.
+const DOWNLOAD_URL = "/downloads/Grabify-Setup.exe";
 
 const navLinks = [
   ["Features", "#features"],
@@ -13,7 +29,7 @@ const featureCards = [
   {
     number: "01",
     title: "Genuinely fast",
-    copy: "Each file is split into up to 32 parallel connections and reassembled \u2014 bit-for-bit identical, just finished sooner.",
+    copy: "Each file is split into up to 32 parallel connections and reassembled — bit-for-bit identical, just finished sooner.",
   },
   {
     number: "02",
@@ -22,8 +38,8 @@ const featureCards = [
   },
   {
     number: "03",
-    title: "Free & yours",
-    copy: "Completely free \u2014 no subscription, no ads, no telemetry, no nag screens. Download it and go.",
+    title: "Yours, not rented",
+    copy: "Free to download and use. Pro is a one-time purchase — never a subscription — and stays ad-free, telemetry-free and un-throttled.",
   },
 ];
 
@@ -31,32 +47,52 @@ const comparisonRows = [
   ["Multi-connection acceleration", "Yes", "Yes", "yes"],
   ["Designed for Windows 11", "No", "Yes", "mixed"],
   ["True dark mode", "No", "Yes", "mixed"],
-  ["Pricing", "Per major version", "Free", "text"],
+  ["Pricing", "Higher-priced license", "$12.99 lifetime", "text"],
   ["Nag screens & telemetry", "Yes", "None", "text"],
 ];
 
-const priceItems = ["Every feature included", "Free updates", "Browser integration", "No ads or telemetry"];
+// Free vs Pro capability matrix. Cell values: true (included), false (not
+// available), or a string (a specific limit).
+const planRows = [
+  ["HTTP, torrents, browser capture, categories, resume", true, true],
+  ["Active downloads at once", "3", "16"],
+  ["Connections per download", "4", "16"],
+  ["Download queues", "Default only", "Unlimited"],
+  ["Scheduling & completion actions", false, true],
+  ["Bandwidth control", "Global", "Per-download & queue"],
+  ["Custom proxy, host profiles, saved logins", false, true],
+  ["Video", "Up to 720p", "Full resolution & formats"],
+];
 
 const faqs = [
   {
     question: "How much does it cost?",
     answer:
-      "Grabify is free. No subscription, no fee, no account \u2014 download it and use every feature. There are no ads and no telemetry.",
+      "Grabify is free to download and use — the free tier covers everyday downloading with up to 3 downloads at once. Grabify Pro is a one-time " +
+      PRICE.regular +
+      " (" +
+      PRICE.launch +
+      " during launch) that lifts the limits and unlocks queues, scheduling, bandwidth control, proxy/auth and full-resolution video, on up to 3 of your Windows devices. No subscription, ever.",
+  },
+  {
+    question: "Can I get a refund?",
+    answer:
+      "Yes. Pro comes with a 14-day money-back guarantee, handled by our payment provider Paddle. A refund or chargeback simply returns Grabify to the free tier — your settings and queued downloads are kept.",
   },
   {
     question: "How is it faster than my browser?",
     answer:
-      "Your browser downloads over a single connection and rarely uses all your bandwidth. Grabify opens many at once \u2014 up to 32 \u2014 and pulls a different slice of the file down each, then reassembles them. On capable servers that's dramatically faster.",
+      "Your browser downloads over a single connection and rarely uses all your bandwidth. Grabify opens many at once — up to 32 — and pulls a different slice of the file down each, then reassembles them. On capable servers that's dramatically faster.",
+  },
+  {
+    question: "What is Grabify for?",
+    answer:
+      "Everyday files you have the right to download: app installers, disk images, drivers, game files, datasets, archives, large documents and your own media. Please respect the terms of the sites you use and applicable copyright law.",
   },
   {
     question: "Does it work with Chrome and Edge?",
     answer:
       "Yes. Connect your browser once and Grabify captures downloads automatically as you click. Magnet links are handled too, and you can send any link from the right-click menu.",
-  },
-  {
-    question: "What is Grabify for?",
-    answer:
-      "Everyday files: app installers, disk images, drivers, game files, datasets, archives and large documents. Anything your browser can download, Grabify downloads faster and can resume if interrupted.",
   },
 ];
 
@@ -89,9 +125,9 @@ function MoonIcon() {
   );
 }
 
-function CheckIcon() {
+function CheckIcon({ className = "h-[15px] w-[15px] flex-none text-fg" }) {
   return (
-    <svg className="h-[15px] w-[15px] flex-none text-fg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M20 6 9 17l-5-5" />
     </svg>
   );
@@ -104,6 +140,13 @@ function PlusMark() {
       <span className="absolute left-[3px] top-1/2 h-[1.5px] w-3.5 -translate-y-1/2 rounded-sm bg-muted" />
     </span>
   );
+}
+
+// Renders a Free/Pro comparison cell from a boolean or a string limit.
+function PlanCell({ value, pro }) {
+  if (value === true) return <CheckIcon className={`h-[15px] w-[15px] ${pro ? "text-fg" : "text-muted"}`} />;
+  if (value === false) return <span className="text-faint">—</span>;
+  return <span className={pro ? "font-medium text-fg" : "text-muted"}>{value}</span>;
 }
 
 function useLandingEffects() {
@@ -152,6 +195,52 @@ function useLandingEffects() {
   return { scrolled, theme, toggleTheme };
 }
 
+// Loads Paddle.js, wires the checkout.completed event to onCompleted (with the
+// Paddle transaction id), and exposes a checkout opener for the Pro plan.
+function usePaddle(onCompleted) {
+  const [ready, setReady] = useState(false);
+  const cbRef = useRef(onCompleted);
+  cbRef.current = onCompleted;
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const init = () => {
+      try {
+        if (PADDLE.environment === "sandbox") window.Paddle.Environment.set("sandbox");
+        window.Paddle.Initialize({
+          token: PADDLE.clientToken,
+          eventCallback: (event) => {
+            if (event?.name === "checkout.completed") {
+              const txn = event?.data?.transaction_id || event?.data?.transactionId;
+              if (txn && cbRef.current) cbRef.current(txn);
+            }
+          },
+        });
+        setReady(true);
+      } catch (err) {
+        console.error("Paddle init failed", err);
+      }
+    };
+    if (window.Paddle) {
+      init();
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://cdn.paddle.com/paddle/v2/paddle.js";
+    script.async = true;
+    script.onload = init;
+    document.body.appendChild(script);
+  }, []);
+
+  const openCheckout = () => {
+    if (window.Paddle && ready) {
+      window.Paddle.Checkout.open({ items: [{ priceId: PADDLE.priceId, quantity: 1 }] });
+    }
+  };
+
+  return { ready, openCheckout };
+}
+
 const wrap = "mx-auto w-full max-w-page px-5 sm:px-7";
 const buttonBase = "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-transparent font-sans font-semibold transition duration-150";
 const buttonPrimary = `${buttonBase} bg-fg text-bg hover:opacity-85`;
@@ -162,6 +251,81 @@ const heading = "font-display font-medium leading-[1.1] tracking-normal text-bal
 
 export default function Home() {
   const { scrolled, theme, toggleTheme } = useLandingEffects();
+  const { isSignedIn, user } = useUser();
+  const { getToken } = useAuth();
+  const clerk = useClerk();
+
+  // Whether the signed-in user already owns Pro — so we don't offer to sell the
+  // lifetime deal twice.
+  const [hasPro, setHasPro] = useState(false);
+
+  const fetchHasPro = useCallback(async () => {
+    try {
+      const token = await getToken();
+      if (!token) return false;
+      const res = await fetch(`${LICENSE_API}/v1/account`, { headers: { authorization: `Bearer ${token}` } });
+      if (!res.ok) return false;
+      const data = await res.json();
+      return (data.licenses || []).some((l) => l.status === "active");
+    } catch {
+      return false;
+    }
+  }, [getToken]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!isSignedIn) {
+      setHasPro(false);
+      return;
+    }
+    fetchHasPro().then((owns) => {
+      if (!cancelled) setHasPro(owns);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isSignedIn, fetchHasPro]);
+
+  // After a completed purchase, send the buyer to their dashboard where the
+  // license key and devices live (no email, no on-screen key here).
+  function handleCompleted() {
+    try {
+      window.Paddle?.Checkout?.close?.();
+    } catch {}
+    window.location.href = "/dashboard";
+  }
+
+  const { ready: paddleReady } = usePaddle(handleCompleted);
+
+  // Gate purchase behind an account, and never sell the lifetime deal twice.
+  // Already Pro → dashboard. Not signed in → Clerk sign-up. Signed in → Paddle
+  // checkout carrying the account email + Clerk user id, so the webhook links
+  // the license to this user.
+  async function handleGetPro() {
+    if (hasPro) {
+      window.location.href = "/dashboard";
+      return;
+    }
+    if (!isSignedIn) {
+      clerk.openSignUp({ afterSignUpUrl: "/", afterSignInUrl: "/" });
+      return;
+    }
+    if (!window.Paddle) return;
+    // Final guard against double-buying the lifetime deal: re-check ownership
+    // server-side right before opening checkout (covers the initial-load race
+    // and any stale state).
+    if (await fetchHasPro()) {
+      setHasPro(true);
+      window.location.href = "/dashboard";
+      return;
+    }
+    const email = user?.primaryEmailAddress?.emailAddress;
+    window.Paddle.Checkout.open({
+      items: [{ priceId: PADDLE.priceId, quantity: 1 }],
+      ...(email ? { customer: { email } } : {}),
+      customData: { user_id: user.id },
+    });
+  }
 
   return (
     <>
@@ -194,9 +358,29 @@ export default function Home() {
           >
             {theme === "dark" ? <MoonIcon /> : <SunIcon />}
           </button>
-          <a href="#pricing" className={`${buttonPrimary} px-[18px] py-[9px] text-[14.5px]`}>
-            Download
-          </a>
+          {isSignedIn ? (
+            <div className="flex items-center gap-1.5">
+              <a href="/dashboard" className={`${buttonGhost} px-[16px] py-[8px] text-[14px]`}>
+                Dashboard
+              </a>
+              <button type="button" onClick={() => clerk.signOut()} className="rounded-lg px-2.5 py-2 text-[14px] text-muted transition hover:text-fg">
+                Log out
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => clerk.openSignIn({ afterSignInUrl: "/", afterSignUpUrl: "/" })}
+              className={`${buttonGhost} px-[16px] py-[8px] text-[14px]`}
+            >
+              Log in
+            </button>
+          )}
+          {!hasPro && (
+            <a href="#pricing" className={`${buttonPrimary} px-[18px] py-[9px] text-[14.5px]`}>
+              Get Pro
+            </a>
+          )}
         </div>
       </nav>
 
@@ -221,14 +405,14 @@ export default function Home() {
               Grabify splits every file across many connections, so downloads finish in a fraction of the time. Fast like IDM &mdash; without the interface from 2005.
             </p>
             <div className="mt-[34px] flex flex-wrap justify-center gap-[11px]">
-              <a href="#pricing" className={`${buttonPrimary} px-[26px] py-[13px] text-[15.5px]`}>
+              <a href={DOWNLOAD_URL} download="Grabify-Setup.exe" className={`${buttonPrimary} px-[26px] py-[13px] text-[15.5px]`}>
                 Download for Windows
               </a>
-              <a href="#features" className={`${buttonGhost} px-[26px] py-[13px] text-[15.5px]`}>
-                See how it works
+              <a href="#pricing" className={`${buttonGhost} px-[26px] py-[13px] text-[15.5px]`}>
+                See Free vs Pro
               </a>
             </div>
-            <p className="mt-[18px] text-[13px] tabular-nums text-faint">Free &middot; Windows 10 &amp; 11 &middot; No account needed</p>
+            <p className="mt-[18px] text-[13px] tabular-nums text-faint">Windows 10 &amp; 11 &middot; Free to download &middot; Pro from {PRICE.launch}</p>
           </div>
 
           <div className={`${wrap} relative z-[1] mt-[52px] sm:mt-[76px]`}>
@@ -241,7 +425,7 @@ export default function Home() {
                   height="1152"
                   decoding="async"
                   fetchPriority="high"
-                  alt="The Grabify app on Windows \u2014 a clean download list with progress, categories and speeds."
+                  alt="The Grabify app on Windows — a clean download list with progress, categories and speeds."
                 />
                 <img
                   className={theme === "dark" ? "block h-auto w-full" : "hidden"}
@@ -307,21 +491,83 @@ export default function Home() {
           <div className={wrap}>
             <div className="reveal mx-auto max-w-[560px] text-center">
               <span className={eyebrow}>Pricing</span>
-              <div className="mt-2 font-display text-[clamp(4rem,9vw,6rem)] font-medium leading-[.9] tracking-[-0.01em]">Free</div>
-              <p className="mt-3.5 text-[1.05rem] text-muted">No cost. No catch. No account.</p>
-              <a href="#" className={`${buttonPrimary} mt-[30px] px-[26px] py-[13px] text-[15.5px]`}>
-                Download for Windows
-              </a>
-              <p className="mt-4 text-[13px] text-faint">Free for Windows 10 &amp; 11 &middot; No sign-up, no card required</p>
-              <ul className="mt-[38px] flex list-none flex-wrap justify-center gap-x-[22px] gap-y-2.5 p-0">
-                {priceItems.map((item) => (
-                  <li key={item} className="inline-flex items-center gap-2 text-sm text-muted">
-                    <CheckIcon />
-                    {item}
-                  </li>
-                ))}
-              </ul>
+              <h2 className={`${heading} mt-3.5 text-[clamp(1.9rem,3.6vw,2.7rem)]`}>Free to start. Pro when you need more.</h2>
+              <p className="mt-3.5 text-[1.05rem] text-muted">A one-time purchase, not a subscription. No account needed to download or activate.</p>
             </div>
+
+            {/* plan cards */}
+            <div className="reveal mx-auto mt-14 grid max-w-[760px] gap-5 md:grid-cols-2">
+              {/* Free */}
+              <div className="flex flex-col rounded-2xl border border-hair p-7">
+                <div className="text-[13px] font-semibold uppercase tracking-[0.03em] text-muted">Free</div>
+                <div className="mt-3 font-display text-[3.2rem] font-medium leading-none">$0</div>
+                <p className="mt-3 text-[14.5px] text-muted">Everything you need for everyday downloading.</p>
+                <ul className="mt-6 flex flex-1 list-none flex-col gap-2.5 p-0">
+                  {["Multi-connection acceleration", "Browser capture & torrents", "3 downloads, 4 connections each", "Video up to 720p"].map((item) => (
+                    <li key={item} className="flex items-center gap-2.5 text-sm text-muted">
+                      <CheckIcon className="h-[15px] w-[15px] flex-none text-muted" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+                <a href={DOWNLOAD_URL} download="Grabify-Setup.exe" className={`${buttonGhost} mt-7 px-[22px] py-[12px] text-[15px]`}>
+                  Download for Windows
+                </a>
+              </div>
+
+              {/* Pro */}
+              <div className="relative flex flex-col rounded-2xl border-2 border-fg p-7">
+                <div className="flex items-center justify-between">
+                  <div className="text-[13px] font-semibold uppercase tracking-[0.03em] text-fg">Pro Lifetime</div>
+                  <span className="rounded-full bg-fg px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.03em] text-bg">Launch price</span>
+                </div>
+                <div className="mt-3 flex items-end gap-2.5">
+                  <span className="font-display text-[3.2rem] font-medium leading-none">{PRICE.launch}</span>
+                  <span className="mb-1 text-[1.1rem] text-faint line-through">{PRICE.regular}</span>
+                </div>
+                <p className="mt-3 text-[14.5px] text-muted">One-time &middot; 3 Windows devices &middot; all 1.x updates.</p>
+                <ul className="mt-6 flex flex-1 list-none flex-col gap-2.5 p-0">
+                  {["16 downloads, 16 connections each", "Unlimited queues, scheduling, actions", "Per-download & per-queue speed limits", "Proxy, host profiles, saved logins", "Full-resolution video & format choice"].map((item) => (
+                    <li key={item} className="flex items-center gap-2.5 text-sm text-fg">
+                      <CheckIcon className="h-[15px] w-[15px] flex-none text-fg" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+                <button type="button" onClick={handleGetPro} disabled={!hasPro && !paddleReady} className={`${buttonPrimary} mt-7 px-[22px] py-[12px] text-[15px] disabled:opacity-60`}>
+                  {hasPro ? "Open your dashboard" : !paddleReady ? "Loading checkout…" : isSignedIn ? "Get Grabify Pro" : "Sign up & get Pro"}
+                </button>
+                {hasPro && <p className="mt-2.5 text-center text-[13px] font-medium text-fg">✓ You already own Grabify Pro Lifetime</p>}
+              </div>
+            </div>
+
+            <p className="reveal mx-auto mt-5 max-w-[560px] text-center text-[13px] text-faint">
+              {PRICE.launch} launch price for the first 14 days, then {PRICE.regular}. 14-day money-back guarantee &middot; secure checkout by Paddle.
+            </p>
+
+            {/* full comparison */}
+            <div className="reveal mx-auto mt-14 max-w-[760px] overflow-hidden rounded-xl border border-hair">
+              <div className="grid grid-cols-[1.6fr_.7fr_.9fr] items-center md:grid-cols-[1.7fr_1fr_1fr]">
+                <div className="px-5 py-3.5 text-[12px] font-semibold uppercase tracking-[0.02em] text-muted">Compare</div>
+                <div className="border-l border-hair px-5 py-3.5 text-[12px] font-semibold uppercase tracking-[0.02em] text-muted">Free</div>
+                <div className="border-l border-hair px-5 py-3.5 text-[12px] font-semibold uppercase tracking-[0.02em] text-fg">Pro</div>
+              </div>
+              {planRows.map(([feature, free, pro]) => (
+                <div key={feature} className="grid grid-cols-[1.6fr_.7fr_.9fr] items-center border-t border-hair md:grid-cols-[1.7fr_1fr_1fr]">
+                  <div className="px-5 py-3.5 text-[14px] text-muted">{feature}</div>
+                  <div className="border-l border-hair px-5 py-3.5 text-[14px] tabular-nums">
+                    <PlanCell value={free} pro={false} />
+                  </div>
+                  <div className="border-l border-hair px-5 py-3.5 text-[14px] tabular-nums">
+                    <PlanCell value={pro} pro={true} />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <p className="reveal mx-auto mt-8 max-w-[600px] text-center text-[13px] leading-[1.6] text-faint">
+              Grabify is a general-purpose download accelerator for files you have the right to download. Please respect the terms of the sites you use and applicable copyright law.
+            </p>
           </div>
         </section>
 
@@ -349,9 +595,10 @@ export default function Home() {
           <div className={wrap}>
             <h2 className={`${heading} text-[clamp(2rem,4.4vw,3.2rem)]`}>Stop watching progress bars.</h2>
             <p className="mx-auto mb-[30px] mt-[18px] max-w-[40ch] text-[1.08rem] text-muted">The speed you loved about IDM, in an app built for Windows today.</p>
-            <a href="#pricing" className={`${buttonPrimary} px-[26px] py-[13px] text-[15.5px]`}>
+            <a href={DOWNLOAD_URL} download="Grabify-Setup.exe" className={`${buttonPrimary} px-[26px] py-[13px] text-[15.5px]`}>
               Download for Windows <span className="font-mono text-xs opacity-70 tabular-nums">Free</span>
             </a>
+            <p className="mt-4 text-[13px] text-faint">Free to download &middot; Pro from {PRICE.launch} one-time</p>
           </div>
         </section>
       </main>
