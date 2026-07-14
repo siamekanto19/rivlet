@@ -364,19 +364,9 @@ func (m *Manager) downloadVideo(ctx context.Context, id string) error {
 			format = "best[ext=mp4]/best"
 		}
 	}
-	// Video resolution is gated by the entitlement. Free is capped (720p) and its
-	// explicit format choice is not honored beyond the cap; Pro gets full format
 	// choice and resolution. Capping here — in the engine — is the real gate; the
 	// UI's format list is only a convenience. A single progressive file within
 	// the cap is preferred so a capped download needs no ffmpeg merge.
-	pol := m.policy()
-	if pol.MaxVideoHeight > 0 {
-		h := pol.MaxVideoHeight
-		format = fmt.Sprintf("best[height<=%d][ext=mp4]/best[height<=%d]/bestvideo[height<=%d]+bestaudio/best[height<=%d]", h, h, h, h)
-	}
-	if !pol.AllowConcurrentFragments {
-		fragments = 1
-	}
 	args := []string{
 		"--no-playlist", "--continue", "--progress", "--newline", "--progress-delta", "0.25",
 		"--progress-template", "download:rivlet:%(progress.downloaded_bytes)s|%(progress.total_bytes)s|%(progress.total_bytes_estimate)s|%(progress.speed)s|%(progress.eta)s",

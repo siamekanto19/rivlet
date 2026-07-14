@@ -10,8 +10,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"rivlet/backend/license"
 )
 
 func TestSegmentedDownloadAndJSONContract(t *testing.T) {
@@ -256,7 +254,6 @@ func TestHostConnectionRulesOverrideLearnedProfile(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer m.Close()
-	m.SetEntitlementProvider(license.ProPolicy) // custom host rules are a Pro feature
 	m.rememberHost("https://cdn.example.test/file", true, 12)
 	if got := m.connectionsForHost("https://cdn.example.test/other", 16); got != 12 {
 		t.Fatalf("learned profile ignored: %d", got)
@@ -309,7 +306,6 @@ func TestCustomProxyAndCredentialRejection(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer m.Close()
-	m.SetEntitlementProvider(license.ProPolicy) // custom proxy is a Pro feature
 	settings := m.GetSettings()
 	settings.ProxyURL = proxy.URL
 	settings.UseSystemProxy = false

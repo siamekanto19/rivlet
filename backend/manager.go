@@ -23,10 +23,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
-
-	"rivlet/backend/license"
 )
 
 type EventSink func(string, any)
@@ -52,27 +49,6 @@ type Manager struct {
 	emit           EventSink
 	wake           chan struct{}
 	closed         chan struct{}
-	// entitlement provides the current license Policy. It is read (lock-free) at
-	// every enforcement point, so limits update live when a license is activated,
-	// lapses, or is revoked. When unset the engine enforces the Free policy.
-	entitlement atomic.Pointer[entitlementProvider]
-}
-
-type entitlementProvider struct{ fn func() license.Policy }
-
-// SetEntitlementProvider installs the source of the current entitlement policy.
-// Safe to call after the engine's goroutines have started.
-func (m *Manager) SetEntitlementProvider(fn func() license.Policy) {
-	m.entitlement.Store(&entitlementProvider{fn: fn})
-}
-
-// policy returns the current effective entitlement. It never touches m.mu, so it
-// is safe to call while holding the manager lock.
-func (m *Manager) policy() license.Policy {
-	if p := m.entitlement.Load(); p != nil && p.fn != nil {
-		return p.fn()
-	}
-	return license.FreePolicy()
 }
 
 func NewManager(stateDir string, emit EventSink) (*Manager, error) {
@@ -131,12 +107,12 @@ func NewManager(stateDir string, emit EventSink) (*Manager, error) {
 }
 func defaultSettings(dl string) Settings {
 	return Settings{
-		DownloadDir: dl, MaxConcurrent: 4, UseSystemProxy: true,
+		DownloadDir: dl, MaxConcurrent: 16, UseSystemProxy: true,
 		NotifyOnComplete: true, AutoResumeOnStartup: false,
 		SegmentCount: 16, RetryCount: 3, RetryDelaySeconds: 5,
 		RequestTimeoutSeconds: 30, UserAgent: "Rivlet/1.0", OverwritePolicy: "rename",
 		VideoDetectionEnabled: true, PreferredVideoQuality: "best", PreferredVideoContainer: "mp4", ConcurrentFragments: 4,
-		Queues: []Queue{{ID: "default", Name: "Downloads", MaxConcurrent: 4, Running: true, Schedule: &Schedule{StartHHmm: "01:00", StopHHmm: "08:00", Weekdays: []int{0, 1, 2, 3, 4, 5, 6}, Repeat: true}}},
+		Queues: []Queue{{ID: "default", Name: "Downloads", MaxConcurrent: 16, Running: true, Schedule: &Schedule{StartHHmm: "01:00", StopHHmm: "08:00", Weekdays: []int{0, 1, 2, 3, 4, 5, 6}, Repeat: true}}},
 		Categories: []Category{
 			{ID: "general", Name: "General", Folder: dl, Extensions: []string{}},
 			{ID: "video", Name: "Video", Folder: filepath.Join(dl, "Video"), Extensions: []string{"mp4", "mkv", "webm", "mov"}},
@@ -228,10 +204,7 @@ func (m *Manager) Add(r AddRequest) (Download, error) {
 	}
 	id := fmt.Sprintf("dl-%d", time.Now().UnixNano())
 	credentialTarget := ""
-	// Persisting HTTP credentials to the OS credential store is a Pro feature. On
-	// Free, a supplied secret is still used for this download (held in memory for
-	// the session below) but never written to disk.
-	if r.AuthSecret != "" && r.RememberCredential && m.policy().AllowStoredCredentials {
+	if r.AuthSecret != "" && r.RememberCredential {
 		credentialTarget = "Rivlet/http/" + safeHost(r.URL) + "/" + r.AuthUsername
 		if err := storeCredential(credentialTarget, r.AuthUsername, r.AuthSecret); err != nil {
 			m.mu.Unlock()
@@ -394,22 +367,12 @@ func (m *Manager) scheduler() {
 			return
 		}
 		m.mu.Lock()
-		pol := m.policy()
 		running := len(m.cancels)
 		globalMax := m.settings.MaxConcurrent
 		if globalMax < 1 {
 			globalMax = 1
 		}
-		// Enforce the entitlement's active-download ceiling (Free 3 / Pro 16). This
-		// is the headline concurrency limit, enforced in the engine regardless of
-		// what the settings request.
-		if globalMax > pol.MaxActiveDownloads {
-			globalMax = pol.MaxActiveDownloads
-		}
-		// Scheduling is a Pro feature; on Free (or a lapsed license) time windows
-		// are ignored so downloads are never blocked by a schedule the user can no
-		// longer control.
-		allowed := !pol.AllowScheduling || scheduleAllows(m.settings.Schedule, time.Now())
+		allowed := scheduleAllows(m.settings.Schedule, time.Now())
 		queueRunning := map[string]int{}
 		for id := range m.cancels {
 			if d := m.downloads[id]; d != nil {
@@ -437,7 +400,7 @@ func (m *Manager) scheduler() {
 			}
 			d := m.downloads[id]
 			q, queueOK := m.queueConfig(d)
-			if d != nil && d.State == Queued && queueOK && q.Running && (!pol.AllowScheduling || scheduleAllows(q.Schedule, time.Now())) && queueRunning[q.ID] < max(q.MaxConcurrent, 1) {
+			if d != nil && d.State == Queued && queueOK && q.Running && scheduleAllows(q.Schedule, time.Now()) && queueRunning[q.ID] < max(q.MaxConcurrent, 1) {
 				ctx, cancel := context.WithCancel(context.Background())
 				m.cancels[id] = cancel
 				d.State = Connecting
@@ -603,11 +566,6 @@ func (m *Manager) completionPolicyLocked(completed *Download) (string, bool) {
 		return "", false
 	}
 	remove := m.settings.RemoveCompleted
-	// Completion actions (per-queue actions, shutdown-on-complete) are a Pro
-	// feature. Removing finished entries is a plain preference and stays on Free.
-	if !m.policy().AllowCompletionActions {
-		return "", remove
-	}
 	queueID := completed.QueueID
 	if queueID == "" {
 		queueID = "default"
@@ -696,12 +654,6 @@ func (m *Manager) downloadHTTP(ctx context.Context, id string) error {
 	m.mu.RLock()
 	timeout, segmentCount, userAgent := m.settings.RequestTimeoutSeconds, m.settings.SegmentCount, m.settings.UserAgent
 	m.mu.RUnlock()
-	// Enforce the entitlement's parallel-connection ceiling (Free 4 / Pro 16).
-	// Clamping segmentCount here bounds both the segment plan and the worker pool
-	// (whose size derives from it), so a Free user never exceeds the limit.
-	if limit := m.policy().MaxConnectionsPerDownload; limit > 0 && segmentCount > limit {
-		segmentCount = limit
-	}
 	if d.RequestUserAgent != "" {
 		userAgent = d.RequestUserAgent
 	}
@@ -916,24 +868,20 @@ func (m *Manager) connectionsForHost(rawURL string, fallback int) int {
 		return fallback
 	}
 	host := strings.ToLower(u.Hostname())
-	// User-defined host rules are a Pro feature. The automatic host-reliability
-	// profile below (learned from probes) still applies on every tier.
-	if m.policy().AllowHostProfiles {
-		m.mu.RLock()
-		for _, rule := range m.settings.HostRules {
-			if strings.EqualFold(rule.Host, host) {
-				m.mu.RUnlock()
-				if rule.ForceSingleConnection {
-					return 1
-				}
-				if rule.MaxConnections > 0 {
-					return min(rule.MaxConnections, fallback)
-				}
-				return fallback
+	m.mu.RLock()
+	for _, rule := range m.settings.HostRules {
+		if strings.EqualFold(rule.Host, host) {
+			m.mu.RUnlock()
+			if rule.ForceSingleConnection {
+				return 1
 			}
+			if rule.MaxConnections > 0 {
+				return min(rule.MaxConnections, fallback)
+			}
+			return fallback
 		}
-		m.mu.RUnlock()
 	}
+	m.mu.RUnlock()
 	var maxConnections int
 	var reliable int
 	if m.db != nil && m.db.QueryRow(`SELECT max_connections,ranges_reliable FROM host_profiles WHERE host=?`, host).Scan(&maxConnections, &reliable) == nil {
@@ -1193,20 +1141,15 @@ func (m *Manager) urlFor(id string) string {
 	return m.downloads[id].URL
 }
 func (m *Manager) throttle(ctx context.Context, id string, n int) error {
-	// Per-download and per-queue speed limits are a Pro feature; Free keeps only
-	// the global limit. Stored per-scope limits are preserved but not applied.
-	perScope := m.policy().AllowPerScopeBandwidth
 	m.mu.RLock()
 	lim := m.settings.GlobalSpeedLimitBps
-	if perScope {
-		if d := m.downloads[id]; d != nil {
-			if q, ok := m.queueConfig(d); ok && q.SpeedLimitBps != nil && (lim == nil || *q.SpeedLimitBps < *lim) {
-				lim = q.SpeedLimitBps
-			}
+	if d := m.downloads[id]; d != nil {
+		if q, ok := m.queueConfig(d); ok && q.SpeedLimitBps != nil && (lim == nil || *q.SpeedLimitBps < *lim) {
+			lim = q.SpeedLimitBps
 		}
-		if x, ok := m.limits[id]; ok && x != nil && (lim == nil || *x < *lim) {
-			lim = x
-		}
+	}
+	if x, ok := m.limits[id]; ok && x != nil && (lim == nil || *x < *lim) {
+		lim = x
 	}
 	m.mu.RUnlock()
 	if lim == nil || *lim <= 0 {
@@ -1384,6 +1327,7 @@ func (m *Manager) UpdateSettings(s Settings) error {
 	m.signal()
 	return m.save()
 }
+
 func (m *Manager) ResetSettings() (Settings, error) {
 	home, _ := os.UserHomeDir()
 	defaults := defaultSettings(filepath.Join(home, "Downloads"))
@@ -1409,11 +1353,6 @@ func (m *Manager) configureHTTPClient() error {
 	m.mu.RLock()
 	proxyRaw, useSystem, timeout := strings.TrimSpace(m.settings.ProxyURL), m.settings.UseSystemProxy, m.settings.RequestTimeoutSeconds
 	m.mu.RUnlock()
-	// A custom proxy is a Pro feature. On Free the configured proxy URL is
-	// preserved in settings but not applied; system-proxy behavior is unchanged.
-	if !m.policy().AllowProxy {
-		proxyRaw = ""
-	}
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.MaxIdleConns = 128
 	transport.MaxIdleConnsPerHost = 32
@@ -1511,15 +1450,17 @@ func (m *Manager) SetQueueRunning(queueID string, running bool) error {
 }
 func (m *Manager) SelectVideoFormat(id, format string) error {
 	m.mu.Lock()
-	defer m.mu.Unlock()
 	d := m.downloads[id]
 	if d == nil {
+		m.mu.Unlock()
 		return errors.New("download not found")
 	}
 	if d.Video == nil {
+		m.mu.Unlock()
 		return errors.New("not a video download")
 	}
 	d.Video.SelectedFormatID = format
+	m.mu.Unlock()
 	return m.save()
 }
 func (m *Manager) Open(id string, folder bool) error {
@@ -1648,6 +1589,7 @@ func ProbeVideo(ctx context.Context, raw, browser, profile string) (VideoInfo, e
 	}
 	return v, nil
 }
+
 func ptrVal(v *int64) int64 {
 	if v == nil {
 		return -1
@@ -1738,7 +1680,7 @@ func (m *Manager) loadLegacyJSON() (persisted, bool) {
 
 func (m *Manager) normalizeSettings() {
 	if m.settings.MaxConcurrent < 1 {
-		m.settings.MaxConcurrent = 4
+		m.settings.MaxConcurrent = 16
 	}
 	if len(m.settings.Queues) == 0 {
 		m.settings.Queues = []Queue{{ID: "default", Name: "Downloads", Priority: 0, MaxConcurrent: m.settings.MaxConcurrent, Running: true}}
