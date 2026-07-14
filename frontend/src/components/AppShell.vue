@@ -18,12 +18,9 @@ import SettingsPage from './SettingsPage.vue';
 import RemoveConfirmDialog from './dialogs/RemoveConfirmDialog.vue';
 import BrowserConnect from './BrowserConnect.vue';
 import CompletionDialog from './dialogs/CompletionDialog.vue';
-import UpgradeDialog from './dialogs/UpgradeDialog.vue';
-import { useLicenseStore } from '../stores/license';
 
 const store = useDownloadsStore();
 const ui = useUiStore();
-const license = useLicenseStore();
 
 // dialog + menu state
 const showAdd = ref(false);
@@ -188,7 +185,7 @@ function onKey(e: KeyboardEvent) {
   }
 }
 
-onMounted(() => {document.addEventListener('keydown', onKey);document.addEventListener('pointerdown',closeFileTypeOnOutside);void license.init()});
+onMounted(() => {document.addEventListener('keydown', onKey);document.addEventListener('pointerdown',closeFileTypeOnOutside)});
 onBeforeUnmount(() => {document.removeEventListener('keydown', onKey);document.removeEventListener('pointerdown',closeFileTypeOnOutside)});
 </script>
 
@@ -270,7 +267,6 @@ onBeforeUnmount(() => {document.removeEventListener('keydown', onKey);document.r
     <RemoveConfirmDialog v-if="showRemove && store.hasSelection" @close="showRemove = false" />
     <BrowserConnect v-if="ui.browserConnect" @close="ui.closeBrowserConnect()" />
     <CompletionDialog v-if="store.completionPrompt" :download="store.completionPrompt" />
-    <UpgradeDialog />
 
     <!-- reading-a-video progress (probe can take a few seconds) -->
     <div v-if="probing" class="probing">
