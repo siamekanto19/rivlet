@@ -9,14 +9,11 @@ import WindowControls from './WindowControls.vue';
 import { pickFolder } from '../services/folderPicker';
 import { integration } from '../services/integration';
 import { videoTools, type VideoToolsHealth } from '../services/videoTools';
-import LicenseSettings from './settings/LicenseSettings.vue';
-import { useLicenseStore } from '../stores/license';
 
 const store = useDownloadsStore();
 const ui = useUiStore();
-const license = useLicenseStore();
 
-type Tab = 'general' | 'appearance' | 'personalization' | 'downloads' | 'connection' | 'browser' | 'filetypes' | 'categories' | 'notifications' | 'advanced' | 'license';
+type Tab = 'general' | 'appearance' | 'personalization' | 'downloads' | 'connection' | 'browser' | 'filetypes' | 'categories' | 'notifications' | 'advanced';
 const tabs: { id: Tab; label: string; icon: string }[] = [
   { id: 'general', label: 'General', icon: 'settings' },
   { id: 'appearance', label: 'Appearance', icon: 'appearance' },
@@ -28,7 +25,6 @@ const tabs: { id: Tab; label: string; icon: string }[] = [
   { id: 'categories', label: 'Categories', icon: 'folder' },
   { id: 'notifications', label: 'Notifications', icon: 'notification' },
   { id: 'advanced', label: 'Advanced', icon: 'settings' },
-  { id: 'license', label: 'License', icon: 'gauge' },
 ];
 const active = ref<Tab>('general');
 
@@ -53,7 +49,7 @@ const src = store.settings as Settings;
 const original=JSON.parse(JSON.stringify(src)) as Settings;
 const draft = reactive<Settings>(JSON.parse(JSON.stringify(src)));
 const confirmRestore=ref(false);
-const pageKeys:Record<Tab,(keyof Settings)[]>={general:['downloadDir','clipboardMonitoring'],appearance:[],personalization:[],downloads:['maxConcurrent','globalSpeedLimitBps','shutdownOnComplete','overwritePolicy','autoResumeOnStartup','removeCompleted'],connection:['segmentCount','retryCount','retryDelaySeconds','requestTimeoutSeconds','userAgent','useSystemProxy','proxyUrl','hostRules'],browser:['showBrowserOnboardingOnStartup','videoDetectionEnabled','disabledVideoSites','preferredVideoQuality','preferredVideoContainer','concurrentFragments','cookieConsent','cookieBrowser','cookieProfile'],filetypes:['captureFileTypes','excludedSites'],categories:['categories'],notifications:['notifyOnComplete','showCompletionDialog'],advanced:['temporaryDir','queues'],license:[]};
+const pageKeys:Record<Tab,(keyof Settings)[]>={general:['downloadDir','clipboardMonitoring'],appearance:[],personalization:[],downloads:['maxConcurrent','globalSpeedLimitBps','shutdownOnComplete','overwritePolicy','autoResumeOnStartup','removeCompleted'],connection:['segmentCount','retryCount','retryDelaySeconds','requestTimeoutSeconds','userAgent','useSystemProxy','proxyUrl','hostRules'],browser:['showBrowserOnboardingOnStartup','videoDetectionEnabled','disabledVideoSites','preferredVideoQuality','preferredVideoContainer','concurrentFragments','cookieConsent','cookieBrowser','cookieProfile'],filetypes:['captureFileTypes','excludedSites'],categories:['categories'],notifications:['notifyOnComplete','showCompletionDialog'],advanced:['temporaryDir','queues']};
 function syncDerivedFields(){captureTypesText.value=(draft.captureFileTypes??[]).join(', ');excludedSitesText.value=(draft.excludedSites??[]).join('\n');disabledVideoSitesText.value=(draft.disabledVideoSites??[]).join('\n');limitOn.value=draft.globalSpeedLimitBps!=null;limitKb.value=draft.globalSpeedLimitBps?Math.round(draft.globalSpeedLimitBps/1024):500}
 function resetPage(){for(const key of pageKeys[active.value]){(draft as unknown as Record<string,unknown>)[key]=JSON.parse(JSON.stringify((original as unknown as Record<string,unknown>)[key]))};syncDerivedFields()}
 async function restoreDefaults(){const defaults=await store.resetSettings();Object.assign(draft,JSON.parse(JSON.stringify(defaults)));syncDerivedFields();confirmRestore.value=false}
@@ -72,7 +68,7 @@ const limitKb = ref(
 
 const newCatName = ref('');
 const newQueueName = ref('');
-function addQueue(){const name=newQueueName.value.trim();if(!name)return;if(!license.isPro){license.promptUpgrade('unlimited queues','Free includes the default queue. Pro adds unlimited queues with their own priority, concurrency, bandwidth and schedule.');return}draft.queues.push({id:'queue-'+Date.now(),name,priority:0,maxConcurrent:2,running:true,speedLimitBps:null,schedule:{enabled:false,startHHmm:'01:00',stopHHmm:'08:00',weekdays:[0,1,2,3,4,5,6],repeat:true},completionAction:''});newQueueName.value=''}
+function addQueue(){const name=newQueueName.value.trim();if(!name)return;draft.queues.push({id:'queue-'+Date.now(),name,priority:0,maxConcurrent:2,running:true,speedLimitBps:null,schedule:{enabled:false,startHHmm:'01:00',stopHHmm:'08:00',weekdays:[0,1,2,3,4,5,6],repeat:true},completionAction:''});newQueueName.value=''}
 function removeQueue(id:string){if(id!=='default')draft.queues=draft.queues.filter((q)=>q.id!==id)}
 function addCategory() {
   const name = newCatName.value.trim();
@@ -101,13 +97,13 @@ function setExt(c: Category, value: string) {
     .filter(Boolean);
 }
 
-function save() {
+async function save() {
   draft.globalSpeedLimitBps = limitOn.value ? parseSpeedToBps(String(limitKb.value), 'KB') : null;
   if (!draft.schedule) draft.schedule = { enabled: false, startHHmm: '01:00', stopHHmm: '08:00' };
   draft.captureFileTypes = captureTypesText.value.split(/[\s,]+/).map((x) => x.replace(/^\./, '').toLowerCase()).filter(Boolean);
   draft.excludedSites = excludedSitesText.value.split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
   draft.disabledVideoSites = disabledVideoSitesText.value.split(/\r?\n/).map((x) => x.trim().toLowerCase()).filter(Boolean);
-  store.updateSettings(JSON.parse(JSON.stringify(draft)));
+  await store.updateSettings(JSON.parse(JSON.stringify(draft)));
   ui.closeSettings();
 }
 
@@ -323,8 +319,8 @@ async function chooseCategoryFolder(category: Category) {
         <!-- CONNECTION -->
         <section v-show="active === 'connection'" class="pane">
           <div class="section-intro"><h2>Connection tuning</h2><p>Control parallel connections, failure recovery, and HTTP identity.</p></div>
-          <div class="frow inline"><label>Segments per download</label><input class="narrow" type="number" min="1" max="32" v-model.number="draft.segmentCount" /></div>
-          <span class="hint">Rivlet adapts this maximum to file size. Sixteen is fast for large files without wasting connections on small files.</span>
+          <div class="frow inline"><label>Connections per download</label><input class="narrow" type="number" min="1" max="32" v-model.number="draft.segmentCount" /></div>
+          <span class="hint">Rivlet adapts this maximum to file size, so small files do not waste connections.</span>
           <div class="frow inline"><label>Retry failed downloads</label><div class="unit-control"><input class="narrow" type="number" min="0" max="20" v-model.number="draft.retryCount" /><span>times</span></div></div>
           <div class="frow inline"><label>Delay between retries</label><div class="unit-control"><input class="narrow" type="number" min="1" max="3600" v-model.number="draft.retryDelaySeconds" /><span>seconds</span></div></div>
           <div class="frow inline"><label>Connection timeout</label><div class="unit-control"><input class="narrow" type="number" min="5" max="300" v-model.number="draft.requestTimeoutSeconds" /><span>seconds</span></div></div>
@@ -356,6 +352,7 @@ async function chooseCategoryFolder(category: Category) {
           <ol class="install-steps"><li>Open <b>chrome://extensions</b> or <b>edge://extensions</b>.</li><li>Enable Developer mode and choose <b>Load unpacked</b>.</li><li>Select Rivlet's installed <b>integration\extension</b> folder.</li><li>Open extension options and run Test connection.</li></ol>
           <label class="chk"><input type="checkbox" v-model="draft.videoDetectionEnabled" /> Enable playback-based video detection after granting all-site access in the extension</label>
           <div class="frow"><label>Never prompt on these sites</label><textarea v-model="disabledVideoSitesText" rows="4" placeholder="example.com" /><span class="hint">Keep this list aligned with the extension's Disabled sites list.</span></div>
+          <div class="section-intro"><h2>Video preferences</h2><p>Choose the default quality, container, and browser profile options for captured video.</p></div>
           <div class="frow inline"><label>Preferred video quality</label><select v-model="draft.preferredVideoQuality" class="wide-control"><option value="best">Best available</option><option value="2160">2160p</option><option value="1440">1440p</option><option value="1080">1080p</option><option value="720">720p</option><option value="480">480p</option></select></div>
           <div class="frow inline"><label>Preferred container</label><select v-model="draft.preferredVideoContainer" class="wide-control"><option value="mp4">MP4</option><option value="mkv">MKV</option><option value="webm">WebM</option></select></div>
           <div class="frow inline"><label>Concurrent video fragments</label><input class="narrow" type="number" min="1" max="16" v-model.number="draft.concurrentFragments" /></div>
@@ -430,10 +427,6 @@ async function chooseCategoryFolder(category: Category) {
           <div class="frow"><button class="btn connect-btn" @click="exportDiagnostics"><Icon name="file" :size="15"/> Export diagnostics…</button><span v-if="diagnosticStatus" class="hint">{{ diagnosticStatus }}</span></div>
         </section>
 
-        <!-- LICENSE & DEVICES -->
-        <section v-show="active === 'license'" class="pane">
-          <LicenseSettings />
-        </section>
         </div>
 
         <!-- footer -->
