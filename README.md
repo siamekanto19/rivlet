@@ -1,5 +1,9 @@
 # Rivlet
 
+<p align="center">
+  <img src="landing/public/assets/rivlet-logo.png" alt="Rivlet logo" width="160">
+</p>
+
 Rivlet is a fast, modern download manager for Windows. It accelerates compatible HTTP/HTTPS downloads with parallel connections and provides queues, scheduling, categories, browser capture, clipboard monitoring, bandwidth controls, torrent support, and video downloads in a native Windows 11-style app.
 
 Rivlet is free for everyone: no account, subscription, ads, telemetry, or feature gates.
